@@ -97,7 +97,7 @@ def detect_blobs(
                            exclude_border=exclude_border)
     
     elif approach.value == "blob_doh":
-        result =  blob_dog(layer.data, min_sigma=min_sigma,
+        result =  blob_doh(layer.data, min_sigma=min_sigma,
                            max_sigma=max_sigma,
                            num_sigma=num_sigma,
                            threshold=threshold,
