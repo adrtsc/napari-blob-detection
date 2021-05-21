@@ -18,3 +18,8 @@ viewer.add_image(image_gray, name='img')
 
 # In the viewer window navigate to:
 # "Plugins" -> "Add Dock Widget" -> "napari-blob-detection" -> "detect_blobs"
+
+viewer.window.add_dock_widget(blob_detection())
+
+filter_widget = filter_widget()
+viewer.window.add_dock_widget(filter_widget)

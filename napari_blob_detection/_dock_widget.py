@@ -7,7 +7,6 @@ see: https://napari.org/docs/dev/plugins/hook_specifications.html
 Replace code below according to your needs.
 """
 from napari_plugin_engine import napari_hook_implementation
-from qtpy.QtWidgets import QWidget, QHBoxLayout, QPushButton, QComboBox, QLabel
 from magicgui import magic_factory
 from skimage.feature import blob_dog, blob_log, blob_doh
 from math import sqrt
@@ -17,6 +16,7 @@ from napari import Viewer
 import numpy as np
 import pandas as pd
 from skimage.draw import disk
+from napari.layers import Image, Points
 
 
 def init(widget):
@@ -63,7 +63,7 @@ class Detector(Enum):
 @magic_factory(call_button="Detect blobs",
                marker={"choices": ['disc', 'ring', 'diamond']},
                widget_init=init)
-def detect_blobs(
+def blob_detection(
     layer: "napari.layers.Image",
     viewer: Viewer,
     approach: Detector,
@@ -117,46 +117,85 @@ def detect_blobs(
     size = result.iloc[:, -1]*2
     output = result.iloc[:, 0:-1].astype(int)
     
-    filter_widget = filter_blobs(
-        blobs_df = {'value': result},
-        l_name = {'value': approach.value},
-        layer = {'value': layer.data},
-        marker = {'value': marker})
+    # if len(output > 0):
     
-    if "Filter widget" in viewer.window._dock_widgets:
-        viewer.window.remove_dock_widget(viewer.window._dock_widgets["Filter widget"])
-        
-    viewer.window.add_dock_widget(filter_widget, name="Filter widget")
+    #     filter_widget = filter_blobs(
+    #         blobs_df = {'value': result},
+    #         l_name = {'value': approach.value},
+    #         layer = {'value': layer.data},
+    #         marker = {'value': marker})
+    
+    #     if "Filter widget" in viewer.window._dock_widgets:
+    #         viewer.window.remove_dock_widget(
+    #             viewer.window._dock_widgets["Filter widget"])
+    
+    filter_instance = filter_widget()
+    
+    viewer.window.add_dock_widget(filter_instance, name="Filter widget") 
 
     return (output, {'size': size, 'symbol': marker,
-                     'name':approach.value, 'opacity': 0.5}, 'points')
-
-def init_filter(widget):
+                      'name':approach.value, 'opacity': 0.5}, 'points')
     
-    widget.threshold.max = np.max(
-          widget.blobs_df.value[widget.feature.value.value])
-    widget.threshold.min = np.min(
-        widget.blobs_df.value[widget.feature.value.value])
+    
+    
+def filter_init(widget):
     
     @widget.feature.changed.connect
     def update_max_threshold(event):
+
         widget.threshold.max = np.max(
-            widget.blobs_df.value[widget.feature.value.value])
+            widget.data_df.value[widget.feature.value.value])
         widget.threshold.min = np.min(
-            widget.blobs_df.value[widget.feature.value.value])
+            widget.data_df.value[widget.feature.value.value])
         widget.threshold.value = np.min(
-            widget.blobs_df.value[widget.feature.value.value])
+            widget.data_df.value[widget.feature.value.value])
+    
+    @widget.measure.changed.connect
+    def measure(event):
+    
+        data = np.column_stack((widget.points_layer.value.data,
+                                widget.points_layer.value.size))
         
+        data_df = pd.DataFrame(data, columns=['y_coordinates', 
+                                              'x_coordinates',
+                                              'size_y',
+                                              'size_x'])
+    
+        mean_intensity = []
+        for index, row in data_df.iterrows():
+            rr, cc = disk(tuple(row[0:2]), row['size_y'],
+                          shape=np.shape(widget.img.value))
+            pixels = widget.img.value[rr, cc]
+            mean_intensity.append(np.mean(pixels))
+        
+        data_df['mean_intensity'] = mean_intensity 
+        
+        
+        widget.data_df.value = data_df
+        
+        # update the threshold min/max
+        
+        widget.threshold.max = np.max(
+              widget.data_df.value[widget.feature.value.value])
+        widget.threshold.min = np.min(
+            widget.data_df.value[widget.feature.value.value])
+        
+    @widget.threshold.changed.connect
+    def apply_filter(event):
+    
+        data_df = widget.data_df.value
+        df_filtered = data_df.loc[
+            data_df[widget.feature.value.value] >= widget.threshold.value]
+        output = df_filtered[['y_coordinates', 'x_coordinates']]
+        new_size = df_filtered[['size_y', 'size_x']]
+        widget.points_layer.value.data = output
+        widget.points_layer.value.size = new_size
 
-    mean_intensity = []
-    for blob in np.array(widget.blobs_df.value):
-        rr, cc = disk(tuple(blob[0:2]), blob[-1], shape=np.shape(widget.layer.value))
-        pixels = widget.layer.value[rr, cc]
-        mean_intensity.append(np.mean(pixels))
-    widget.blobs_df.value['mean_intensity'] = mean_intensity 
-
-
-class Filter(Enum):
+        
+        
+        
+    
+class Feature(Enum):
     """A set of valid arithmetic operations for image_arithmetic.
 
     To create nice dropdown menus with magicgui, it's best
@@ -167,29 +206,27 @@ class Filter(Enum):
     y_coordinates = "y_coordinates"
     x_coordinates = "x_coordinates"
     mean_intensity = "mean_intensity"
-    size = "size"
+    size_y = "size_y"
+    size_x = "size_x"
 
 
-@magic_factory(auto_call=True,
-               threshold={'label': " ", "widget_type": "FloatSlider"},
-               layout='horizontal',
-               widget_init=init_filter)
-def filter_blobs(feature: Filter,
-                 l_name=None,
-                 layer=None,
-                 blobs_df=None,
-                 marker=None,
-                 threshold=0) -> LayerDataTuple:
-
-    filtered_blobs = blobs_df.loc[blobs_df[feature.value] > threshold]
-    output = filtered_blobs.iloc[:, 0:2].astype(int)
-    new_size = filtered_blobs['size']*2
+@magic_factory(call_button={'label': ' ', 'visible': False},
+           threshold={'label': " ", "widget_type": "FloatSlider"},
+           measure={'label': 'measure', 'widget_type': 'PushButton'},
+           layout='horizontal',
+           widget_init=filter_init)
+def filter_widget(feature: Feature,
+                  img: ImageData,
+                  points_layer: Points,
+                  threshold=0,
+                  measure=0,
+                  data_df=Image) -> LayerDataTuple:
+    pass
     
-    return (output, {'size': new_size, 'symbol': marker,
-                     'name':l_name}, 'points')
-
 
 @napari_hook_implementation
 def napari_experimental_provide_dock_widget():
     # you can return either a single widget, or a sequence of widgets
-    return [detect_blobs, filter_blobs]
+    return [blob_detection, filter_widget]
+
+
