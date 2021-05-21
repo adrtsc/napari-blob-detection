@@ -6,17 +6,18 @@ see: https://napari.org/docs/dev/plugins/hook_specifications.html
 
 Replace code below according to your needs.
 """
-from napari_plugin_engine import napari_hook_implementation
-from magicgui import magic_factory
-from skimage.feature import blob_dog, blob_log, blob_doh
-from math import sqrt
-from enum import Enum
-from napari.types import LayerDataTuple, ImageData
-from napari import Viewer
 import numpy as np
 import pandas as pd
-from skimage.draw import disk
+
+from napari_plugin_engine import napari_hook_implementation
+from skimage.feature import blob_dog, blob_log, blob_doh
+from napari.types import LayerDataTuple, ImageData
 from napari.layers import Image, Points
+from magicgui import magic_factory
+from skimage.draw import disk
+from napari import Viewer
+from enum import Enum
+from math import sqrt
 
 
 def init(widget):
@@ -64,7 +65,7 @@ class Detector(Enum):
                marker={"choices": ['disc', 'ring', 'diamond']},
                widget_init=init)
 def blob_detection(
-    layer: "napari.layers.Image",
+    layer: Image,
     viewer: Viewer,
     approach: Detector,
     min_sigma=1,
@@ -117,20 +118,8 @@ def blob_detection(
     size = result.iloc[:, -1]*2
     output = result.iloc[:, 0:-1].astype(int)
     
-    # if len(output > 0):
-    
-    #     filter_widget = filter_blobs(
-    #         blobs_df = {'value': result},
-    #         l_name = {'value': approach.value},
-    #         layer = {'value': layer.data},
-    #         marker = {'value': marker})
-    
-    #     if "Filter widget" in viewer.window._dock_widgets:
-    #         viewer.window.remove_dock_widget(
-    #             viewer.window._dock_widgets["Filter widget"])
-    
+    # create filter widget and dock to viewer
     filter_instance = filter_widget()
-    
     viewer.window.add_dock_widget(filter_instance, name="Filter widget") 
 
     return (output, {'size': size, 'symbol': marker,
@@ -192,9 +181,6 @@ def filter_init(widget):
         widget.points_layer.value.size = new_size
 
         
-        
-        
-    
 class Feature(Enum):
     """A set of valid arithmetic operations for image_arithmetic.
 
@@ -228,5 +214,3 @@ def filter_widget(feature: Feature,
 def napari_experimental_provide_dock_widget():
     # you can return either a single widget, or a sequence of widgets
     return [blob_detection, filter_widget]
-
-
