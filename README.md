@@ -24,7 +24,7 @@ https://napari.org/docs/plugins/index.html
 
 You can install `napari-blob-detection` via [pip]:
 
-    pip install napari-blob-detection
+    pip install git+https://github.com/adrtsc/napari-blob-detection.git
 
 ## Contributing
 
