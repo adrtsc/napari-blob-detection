@@ -1,4 +1,4 @@
-from napari_blob_detection._dock_widget import blob_detection
+import napari_blob_detection
 
-def mock_test():
+def test_placeholder():
     pass
