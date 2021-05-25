@@ -139,7 +139,7 @@ def filter_init(widget):
         widget.threshold.value = np.min(
             widget.data_df.value[widget.feature.value.value])
     
-    @widget.measure.changed.connect
+    @widget.call_button.changed.connect
     def measure(event):
     
         data = np.column_stack((widget.points_layer.value.data,
@@ -169,17 +169,22 @@ def filter_init(widget):
         widget.threshold.min = np.min(
             widget.data_df.value[widget.feature.value.value])
         
+        print("Filter initialized.")
+        
     @widget.threshold.changed.connect
     def apply_filter(event):
+        
+        if isinstance(widget.data_df.value, pd.DataFrame):
+            data_df = widget.data_df.value
+            df_filtered = data_df.loc[
+                data_df[widget.feature.value.value] >= widget.threshold.value]
+            output = df_filtered[['y_coordinates', 'x_coordinates']]
+            new_size = df_filtered[['size_y', 'size_x']]
+            widget.points_layer.value.data = output
+            widget.points_layer.value.size = new_size
     
-        data_df = widget.data_df.value
-        df_filtered = data_df.loc[
-            data_df[widget.feature.value.value] >= widget.threshold.value]
-        output = df_filtered[['y_coordinates', 'x_coordinates']]
-        new_size = df_filtered[['size_y', 'size_x']]
-        widget.points_layer.value.data = output
-        widget.points_layer.value.size = new_size
-
+        else:
+            raise Exception("Filter was not initialized.") 
         
 class Feature(Enum):
     """A set of valid arithmetic operations for image_arithmetic.
@@ -196,16 +201,14 @@ class Feature(Enum):
     size_x = "size_x"
 
 
-@magic_factory(call_button={'label': ' ', 'visible': False},
-           threshold={'label': " ", "widget_type": "FloatSlider"},
-           measure={'label': 'measure', 'widget_type': 'PushButton'},
-           layout='horizontal',
-           widget_init=filter_init)
+@magic_factory(call_button = "Initialize filter",
+               threshold={'label': " ", "widget_type": "FloatSlider"},
+               layout='horizontal',
+               widget_init=filter_init)
 def filter_widget(feature: Feature,
                   img: ImageData,
                   points_layer: Points,
                   threshold=0,
-                  measure=0,
                   data_df=Image) -> LayerDataTuple:
     pass
     
