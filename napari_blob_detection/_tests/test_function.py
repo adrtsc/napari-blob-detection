@@ -1,4 +1,4 @@
 import napari_blob_detection
 
-def test_placeholder():
+def test_mock():
     pass
