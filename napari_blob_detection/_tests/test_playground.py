@@ -13,7 +13,7 @@ from skimage.color import rgb2gray
 def test_blob_docking():
     
     viewer = napari.Viewer()
-    viewer.window.add_dock_widget(blob_detection)
+    viewer.window.add_dock_widget(blob_detection())
     assert "Dock widget 1" in viewer.window._dock_widgets, 'blob detection has not been docked'
 
 
@@ -27,7 +27,7 @@ def test_filter_docking():
 def test_blob_detection():
     
     viewer = napari.Viewer()
-    viewer.window.add_dock_widget(blob_detection)
+    viewer.window.add_dock_widget(blob_detection())
     
     image = data.hubble_deep_field()[0:500, 0:500]
     image_gray = rgb2gray(image)
