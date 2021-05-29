@@ -128,17 +128,193 @@ def blob_detection(
     
     
     
+# def filter_init(widget):
+    
+#     @widget.feature.changed.connect
+#     def update_max_threshold(event):
+
+#         widget.threshold.max = np.max(
+#             widget.data_df.value[widget.feature.value.value])
+#         widget.threshold.min = np.min(
+#             widget.data_df.value[widget.feature.value.value])
+#         widget.threshold.value = np.min(
+#             widget.data_df.value[widget.feature.value.value])
+    
+#     @widget.call_button.changed.connect
+#     def measure(event):
+    
+#         data = np.column_stack((widget.points_layer.value.data,
+#                                 widget.points_layer.value.size))
+        
+#         data_df = pd.DataFrame(data, columns=['y_coordinates', 
+#                                               'x_coordinates',
+#                                               'size_y',
+#                                               'size_x'])
+    
+#         min_intensity = []
+#         max_intensity = []
+#         mean_intensity = []
+#         var_intensity = []
+#         mean_bg_intensity = []
+        
+#         for index, row in data_df.iterrows():
+#             rr, cc = disk(tuple(row[0:2]), row['size_y'],
+#                           shape=np.shape(widget.img.value))
+            
+#             rr_bg, cc_bg = disk(tuple(row[0:2]),
+#                               2*row['size_y'],
+#                               shape=np.shape(widget.img.value))
+            
+#             pixels = widget.img.value[rr, cc]
+#             pixels_bg = widget.img.value[rr_bg, cc_bg]
+            
+#             n_pixels = len(pixels)
+#             n_pixels_bg = len(pixels_bg)
+            
+#             mean_bg_intensity.append((np.sum(pixels_bg) - np.sum(pixels)) 
+#                                      / (n_pixels_bg - n_pixels))
+            
+#             mean_intensity.append(np.mean(pixels))
+            
+#             min_intensity.append(np.min(pixels))
+#             max_intensity.append(np.max(pixels))
+#             var_intensity.append(np.var(pixels))
+        
+#         data_df['min_intensity'] = min_intensity
+#         data_df['max_intensity'] = max_intensity
+#         data_df['mean_intensity'] = mean_intensity 
+#         data_df['var_intensity'] = var_intensity
+#         data_df['mean_background_intensity'] = mean_bg_intensity
+#         data_df['SNR'] = np.array(mean_intensity)/np.mean(mean_bg_intensity)
+        
+        
+#         widget.data_df.value = data_df
+        
+#         # update the threshold min/max
+        
+#         widget.threshold.max = np.max(
+#               widget.data_df.value[widget.feature.value.value])
+#         widget.threshold.min = np.min(
+#             widget.data_df.value[widget.feature.value.value])
+        
+#         print("Filter initialized.")
+        
+#     @widget.threshold.changed.connect
+#     def apply_filter(event):
+        
+#         if isinstance(widget.data_df.value, pd.DataFrame):
+#             data_df = widget.data_df.value
+#             df_filtered = data_df.loc[
+#                 data_df[widget.feature.value.value] >= widget.threshold.value]
+#             output = df_filtered[['y_coordinates', 'x_coordinates']]
+#             new_size = df_filtered[['size_y', 'size_x']]
+#             widget.points_layer.value.data = output
+#             widget.points_layer.value.size = new_size
+    
+#         else:
+#             raise Exception("Filter was not initialized.") 
+        
+# class Feature(Enum):
+#     """A set of valid arithmetic operations for image_arithmetic.
+
+#     To create nice dropdown menus with magicgui, it's best
+#     (but not required) to use Enums.  Here we make an Enum
+#     class for all of the image math operations we want to
+#     allow.
+#     """
+#     y_coordinates = "y_coordinates"
+#     x_coordinates = "x_coordinates"
+#     min_intensity = "min_intensity"
+#     max_intensity = "max_intensity"
+#     mean_intensity = "mean_intensity"
+#     var_intensity = "var_intensity"
+#     mean_background_intensity = "mean_background_intensity"
+#     SNR = "SNR"
+#     size_y = "size_y"
+#     size_x = "size_x"
+
+
+# @magic_factory(call_button = "Initialize filter",
+#                threshold={'label': " ", "widget_type": "FloatSlider"},
+#                layout='horizontal',
+#                widget_init=filter_init)
+# def filter_widget(feature: Feature,
+#                   img: ImageData,
+#                   points_layer: Points,
+#                   threshold=0,
+#                   data_df=Image) -> LayerDataTuple:
+#     pass
+    
+
+##############################################################################
+
+
+# class Filter(FunctionGui):
+   
+#     def __init__(self):
+       
+#         super().__init__(Filter.call,
+#                          layout="vertical",
+#                          param_options={"add_filter": {'widget_type': 'PushButton'}})
+        
+#         self.filters = 
+        
+#         @self.add_filter.changed.connect
+#         def add_filter(event):
+#             subfilter = Subfilter()
+#             self.insert(-1, subfilter)
+            
+#             @subfilter.threshold.changed.connect
+#             def test(event):
+                
+#                 data_df = widget.data_df.value
+#                 df_filtered = data_df.loc[
+#                 data_df[widget.feature.value.value] >= widget.threshold.value]
+            
+            
+        
+        
+        
+#     def call(img: ImageData,
+#              points_layer: Points,
+#              add_filter=0,
+#              test=0,
+#              data_df=Image,
+#              filters=Image) -> LayerDataTuple:
+#         print("works")
+        
+        
+        
+# class Subfilter(FunctionGui):
+    
+#     def __init__(self):
+    
+#         super().__init__(Subfilter.call,
+#                          auto_call=True,
+#                          layout="vertical",
+#                          param_options={"threshold": {'widget_type': 'FloatSlider'}})
+        
+#     def call(feature: Feature,
+#              threshold=0,
+#              ):
+#         pass
+    
+    
+    
+
+##############################################################################
+
 def filter_init(widget):
     
-    @widget.feature.changed.connect
-    def update_max_threshold(event):
+    # @widget.feature.changed.connect
+    # def update_max_threshold(event):
 
-        widget.threshold.max = np.max(
-            widget.data_df.value[widget.feature.value.value])
-        widget.threshold.min = np.min(
-            widget.data_df.value[widget.feature.value.value])
-        widget.threshold.value = np.min(
-            widget.data_df.value[widget.feature.value.value])
+    #     widget.threshold.max = np.max(
+    #         widget.data_df.value[widget.feature.value.value])
+    #     widget.threshold.min = np.min(
+    #         widget.data_df.value[widget.feature.value.value])
+    #     widget.threshold.value = np.min(
+    #         widget.data_df.value[widget.feature.value.value])
     
     @widget.call_button.changed.connect
     def measure(event):
@@ -189,28 +365,64 @@ def filter_init(widget):
         
         
         widget.data_df.value = data_df
+        widget.filter_df.value = pd.DataFrame()
         
-        # update the threshold min/max
-        
-        widget.threshold.max = np.max(
-              widget.data_df.value[widget.feature.value.value])
-        widget.threshold.min = np.min(
-            widget.data_df.value[widget.feature.value.value])
         
         print("Filter initialized.")
         
-    @widget.threshold.changed.connect
-    def apply_filter(event):
+    widget.subfilter_counter=0
+    @widget.add_filter.changed.connect
+    def add_filter(event):
         
         if isinstance(widget.data_df.value, pd.DataFrame):
-            data_df = widget.data_df.value
-            df_filtered = data_df.loc[
-                data_df[widget.feature.value.value] >= widget.threshold.value]
-            output = df_filtered[['y_coordinates', 'x_coordinates']]
-            new_size = df_filtered[['size_y', 'size_x']]
-            widget.points_layer.value.data = output
-            widget.points_layer.value.size = new_size
     
+            sf = subfilter()
+            sf.label = " " 
+            sf.name = "subfilter_%02d" % widget.subfilter_counter
+            
+            widget.insert(-1, sf)
+    
+            widget.subfilter_counter += 1
+            
+            # update min/max threshold
+            
+            sf.threshold.max = np.max(
+                  widget.data_df.value[sf.feature.value.value])
+            sf.threshold.min = np.min(
+                widget.data_df.value[sf.feature.value.value])
+            
+            
+            @sf.threshold.changed.connect
+            def test(event):
+                widget.filter_df.value[sf.name] =  widget.data_df.value[sf.feature.value.value] >= sf.threshold.value
+                
+                widget.filter_df.value.all(axis=1)
+                
+                data_df = widget.data_df.value
+                df_filtered = data_df.loc[widget.filter_df.value.all(axis=1)]
+                output = df_filtered[['y_coordinates', 'x_coordinates']]
+                new_size = df_filtered[['size_y', 'size_x']]
+                widget.points_layer.value.data = output
+                widget.points_layer.value.size = new_size
+                
+            @sf.feature.changed.connect
+            def update_threshold(event):
+                
+                # update min/max threshold
+            
+                sf.threshold.max = np.max(
+                      widget.data_df.value[sf.feature.value.value])
+                sf.threshold.min = np.min(
+                    widget.data_df.value[sf.feature.value.value])
+                sf.threshold.value = np.min(
+                widget.data_df.value[sf.feature.value.value])
+                
+            @sf.delete.changed.connect
+            def delete_subfilter(event):
+                sf.threshold.value = sf.threshold.min
+                widget.remove(sf.name)
+                
+                
         else:
             raise Exception("Filter was not initialized.") 
         
@@ -235,18 +447,31 @@ class Feature(Enum):
 
 
 @magic_factory(call_button = "Initialize filter",
-               threshold={'label': " ", "widget_type": "FloatSlider"},
-               layout='horizontal',
+               add_filter={"widget_type": "PushButton"},
+               layout='vertical',
                widget_init=filter_init)
-def filter_widget(feature: Feature,
-                  img: ImageData,
+def filter_widget(img: ImageData,
                   points_layer: Points,
-                  threshold=0,
-                  data_df=Image) -> LayerDataTuple:
+                  data_df=Image,
+                  filter_df=Image,
+                  add_filter=0) -> LayerDataTuple:
+    pass
+
+
+@magic_factory(auto_call=True,
+               threshold={'label': " ", "widget_type": "FloatSlider"},
+               delete={"widget_type": "PushButton"},
+               layout='horizontal')
+def subfilter(feature: Feature,
+              threshold=0,
+              delete=0) -> LayerDataTuple:
     pass
     
+
 
 @napari_hook_implementation
 def napari_experimental_provide_dock_widget():
     # you can return either a single widget, or a sequence of widgets
     return [blob_detection, filter_widget]
+
+
