@@ -120,7 +120,8 @@ def blob_detection(
     
     # create filter widget and dock to viewer
     filter_instance = filter_widget()
-    viewer.window.add_dock_widget(filter_instance, name="Filter widget") 
+    viewer.window.add_dock_widget(filter_instance, name="Filter widget",
+                                  area="bottom") 
 
     return (output, {'size': size, 'symbol': marker,
                       'name':approach.value, 'opacity': 0.5}, 'points')
@@ -150,14 +151,41 @@ def filter_init(widget):
                                               'size_y',
                                               'size_x'])
     
+        min_intensity = []
+        max_intensity = []
         mean_intensity = []
+        var_intensity = []
+        mean_bg_intensity = []
+        
         for index, row in data_df.iterrows():
             rr, cc = disk(tuple(row[0:2]), row['size_y'],
                           shape=np.shape(widget.img.value))
+            
+            rr_bg, cc_bg = disk(tuple(row[0:2]),
+                              2*row['size_y'],
+                              shape=np.shape(widget.img.value))
+            
             pixels = widget.img.value[rr, cc]
+            pixels_bg = widget.img.value[rr_bg, cc_bg]
+            
+            n_pixels = len(pixels)
+            n_pixels_bg = len(pixels_bg)
+            
+            mean_bg_intensity.append((np.sum(pixels_bg) - np.sum(pixels)) 
+                                     / (n_pixels_bg - n_pixels))
+            
             mean_intensity.append(np.mean(pixels))
+            
+            min_intensity.append(np.min(pixels))
+            max_intensity.append(np.max(pixels))
+            var_intensity.append(np.var(pixels))
         
+        data_df['min_intensity'] = min_intensity
+        data_df['max_intensity'] = max_intensity
         data_df['mean_intensity'] = mean_intensity 
+        data_df['var_intensity'] = var_intensity
+        data_df['mean_background_intensity'] = mean_bg_intensity
+        data_df['SNR'] = np.array(mean_intensity)/np.mean(mean_bg_intensity)
         
         
         widget.data_df.value = data_df
@@ -196,7 +224,12 @@ class Feature(Enum):
     """
     y_coordinates = "y_coordinates"
     x_coordinates = "x_coordinates"
+    min_intensity = "min_intensity"
+    max_intensity = "max_intensity"
     mean_intensity = "mean_intensity"
+    var_intensity = "var_intensity"
+    mean_background_intensity = "mean_background_intensity"
+    SNR = "SNR"
     size_y = "size_y"
     size_x = "size_x"
 
