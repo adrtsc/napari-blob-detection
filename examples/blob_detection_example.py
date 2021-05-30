@@ -2,7 +2,7 @@
 """
 Created on Thu May 13 06:13:09 2021
 
-@author: Adria
+@author: Adrian
 """
 %gui qt5
 import napari
