@@ -20,6 +20,7 @@ from enum import Enum
 from math import sqrt
 
 
+
 def init(widget):
     
     # this option should only be visible for blob_dog
@@ -158,27 +159,56 @@ def filter_init(widget):
         mean_bg_intensity = []
         
         for index, row in data_df.iterrows():
-            rr, cc = disk(tuple(row[0:2]), row['size_y'],
-                          shape=np.shape(widget.img.value))
             
-            rr_bg, cc_bg = disk(tuple(row[0:2]),
+            c_img = widget.img.value[row['z_coordinates'].astype("int"), :, :]
+            
+            rr, cc = disk(tuple(row[1:3]), row['size_y'],
+                          shape=np.shape(c_img))
+            
+            rr_bg, cc_bg = disk(tuple(row[1:3]),
                               2*row['size_y'],
-                              shape=np.shape(widget.img.value))
+                              shape=np.shape(c_img))
             
-            pixels = widget.img.value[rr, cc]
-            pixels_bg = widget.img.value[rr_bg, cc_bg]
+            pixels = c_img[rr, cc]
+            pixels_bg = c_img[rr_bg, cc_bg]
             
             n_pixels = len(pixels)
             n_pixels_bg = len(pixels_bg)
             
             mean_bg_intensity.append((np.sum(pixels_bg) - np.sum(pixels)) 
-                                     / (n_pixels_bg - n_pixels))
+                                      / (n_pixels_bg - n_pixels))
             
             mean_intensity.append(np.mean(pixels))
             
             min_intensity.append(np.min(pixels))
             max_intensity.append(np.max(pixels))
             var_intensity.append(np.var(pixels))
+        
+        ''' Tried to have measurements for spheres for each spot
+        but I think that was computationally too expensive'''
+        
+        # for index, row in data_df.iterrows():
+            
+        #     sim = nltools.Simulator()
+        #     sim.brain_mask = sim.to_nifti(np.ones(widget.img.value.shape, dtype="int"))
+        #     sphere = sim.sphere(p=row[0:3], r=row['size_y'])
+        #     bg_sphere = sim.sphere(p=row[0:3], r=row['size_y']*2)
+            
+        #     pixels = widget.img.value[sphere==1]
+            
+        #     pixels_bg = widget.img.value[bg_sphere==1]
+            
+        #     n_pixels = len(pixels)
+        #     n_pixels_bg = len(pixels_bg)
+            
+        #     mean_bg_intensity.append((np.sum(pixels_bg) - np.sum(pixels)) 
+        #                               / (n_pixels_bg - n_pixels))
+            
+        #     mean_intensity.append(np.mean(pixels))
+            
+        #     min_intensity.append(np.min(pixels))
+        #     max_intensity.append(np.max(pixels))
+        #     var_intensity.append(np.var(pixels))
         
         data_df['min_intensity'] = min_intensity
         data_df['max_intensity'] = max_intensity
