@@ -108,7 +108,13 @@ def blob_detection(
         
     # turn results into pd DataFrame
     
-    result = pd.DataFrame(result, columns=['y_coordinates',
+    # add empty z-dimension if not present
+    
+    if result.shape[1] == 3:
+        result = np.pad(result, [(0, 0), (1, 0)])
+    
+    result = pd.DataFrame(result, columns=['z_coordinates',
+                                           'y_coordinates',
                                            'x_coordinates',
                                            'size'])
         
@@ -117,6 +123,7 @@ def blob_detection(
 
     # get spot size
     size = result.iloc[:, -1]*2
+    
     output = result.iloc[:, 0:-1].astype(int)
     
     # create filter widget and dock to viewer
@@ -136,8 +143,11 @@ def filter_init(widget):
         data = np.column_stack((widget.points_layer.value.data,
                                 widget.points_layer.value.size))
         
-        data_df = pd.DataFrame(data, columns=['y_coordinates', 
+        
+        data_df = pd.DataFrame(data, columns=['z_coordinates',
+                                              'y_coordinates', 
                                               'x_coordinates',
+                                              'size_z',
                                               'size_y',
                                               'size_x'])
     
@@ -215,8 +225,10 @@ def filter_init(widget):
                 
                 data_df = widget.data_df.value
                 df_filtered = data_df.loc[widget.filter_df.value.all(axis=1)]
-                output = df_filtered[['y_coordinates', 'x_coordinates']]
-                new_size = df_filtered[['size_y', 'size_x']]
+                output = df_filtered[['z_coordinates', 
+                                      'y_coordinates', 
+                                      'x_coordinates']]
+                new_size = df_filtered[['size_z', 'size_y', 'size_x']]
                 widget.points_layer.value.data = output
                 widget.points_layer.value.size = new_size
                 
@@ -249,6 +261,7 @@ class Feature(Enum):
     class for all of the image math operations we want to
     allow.
     """
+    z_coordinates = "z_coordinates"
     y_coordinates = "y_coordinates"
     x_coordinates = "x_coordinates"
     min_intensity = "min_intensity"
@@ -257,6 +270,7 @@ class Feature(Enum):
     var_intensity = "var_intensity"
     mean_background_intensity = "mean_background_intensity"
     SNR = "SNR"
+    size_z = "size_z"
     size_y = "size_y"
     size_x = "size_x"
 
