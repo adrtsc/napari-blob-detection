@@ -140,9 +140,17 @@ def filter_init(widget):
     
     @widget.call_button.changed.connect
     def measure(event):
-    
-        data = np.column_stack((widget.points_layer.value.data,
-                                widget.points_layer.value.size))
+        
+        coordinates = widget.points_layer.value.data
+        sizes = widget.points_layer.value.size
+        
+        # if widget.img.value.ndim == 2:
+            
+        #     coordinates = np.pad(sizes, [(0, 0), (1, 0)])
+        #     sizes = np.pad(sizes, [(0, 0), (1, 0)])
+                                                              
+            
+        data = np.column_stack((coordinates, sizes))
         
         
         data_df = pd.DataFrame(data, columns=['z_coordinates',
@@ -160,7 +168,14 @@ def filter_init(widget):
         
         for index, row in data_df.iterrows():
             
-            c_img = widget.img.value[row['z_coordinates'].astype("int"), :, :]
+            if widget.img.value.ndim == 2:
+            
+                c_img = widget.img.value.data
+                
+            else:
+                
+                c_img = widget.img.value.data[row['z_coordinates'].astype("int"), :, :]
+                
             
             rr, cc = disk(tuple(row[1:3]), row['size_y'],
                           shape=np.shape(c_img))
@@ -309,7 +324,7 @@ class Feature(Enum):
                add_filter={"widget_type": "PushButton"},
                layout='vertical',
                widget_init=filter_init)
-def filter_widget(img: ImageData,
+def filter_widget(img: Image,
                   points_layer: Points,
                   data_df=Image,
                   filter_df=Image,
