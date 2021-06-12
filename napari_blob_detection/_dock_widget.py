@@ -9,6 +9,7 @@ Replace code below according to your needs.
 import numpy as np
 import pandas as pd
 
+
 from napari_plugin_engine import napari_hook_implementation
 from skimage.feature import blob_dog, blob_log, blob_doh
 from napari.types import LayerDataTuple, ImageData
@@ -16,6 +17,7 @@ from napari.layers import Image, Points
 from magicgui import magic_factory
 from skimage.draw import disk
 from napari import Viewer
+from pathlib import Path
 from enum import Enum
 from math import sqrt
 
@@ -66,6 +68,7 @@ class Detector(Enum):
                marker={"choices": ['disc', 'ring', 'diamond']},
                threshold={"step": 10e-15},
                widget_init=init)
+               
 def blob_detection(
     layer: Image,
     viewer: Viewer,
@@ -78,7 +81,7 @@ def blob_detection(
     overlap=0.5,
     log_scale=False,
     exclude_border=False,
-    marker = 'disc') -> LayerDataTuple:
+    marker='disc') -> LayerDataTuple:
     """Detect blobs in image, returny points layer with spots"""
     
     if detector.value == "blob_log":
@@ -137,8 +140,9 @@ def blob_detection(
 
 def filter_init(widget):
     
+    widget.call_button.visible = False
     
-    @widget.call_button.changed.connect
+    @widget.initialize_filter.changed.connect
     def measure(event):
         
         coordinates = widget.points_layer.value.data
@@ -236,6 +240,10 @@ def filter_init(widget):
         widget.data_df.value = data_df
         widget.filter_df.value = pd.DataFrame()
         
+        widget.result_path.visible = True
+        widget.save_results.visible = True
+        widget.add_filter.visible = True
+        
         
         print("Filter initialized.")
         
@@ -249,7 +257,7 @@ def filter_init(widget):
             sf.label = " " 
             sf.name = "subfilter_%02d" % widget.subfilter_counter
             
-            widget.insert(-1, sf)
+            widget.insert(-4, sf)
     
             widget.subfilter_counter += 1
             
@@ -297,6 +305,17 @@ def filter_init(widget):
                 
         else:
             raise Exception("Filter was not initialized.") 
+            
+    @widget.save_results.changed.connect
+    def save_results(event):
+        
+        if len(widget.filter_df.value > 0):
+            result_df = widget.data_df.value.loc[
+                widget.filter_df.value.all(axis=1)]
+        else:
+            result_df = widget.data_df.value
+            
+        result_df.to_csv(widget.result_path.value)
         
 class Feature(Enum):
     """A set of valid arithmetic operations for image_arithmetic.
@@ -320,15 +339,21 @@ class Feature(Enum):
     size_x = "size_x"
 
 
-@magic_factory(call_button = "Initialize filter",
-               add_filter={"widget_type": "PushButton"},
+@magic_factory(add_filter={"widget_type": "PushButton", 'visible': False},
                layout='vertical',
+               result_path={'mode': 'w', 'label': 'save results',
+                            'visible': False},
+               save_results={'widget_type': 'PushButton', 'visible': False},
+               initialize_filter={'widget_type': 'PushButton'},
                widget_init=filter_init)
 def filter_widget(img: Image,
                   points_layer: Points,
                   data_df=Image,
                   filter_df=Image,
-                  add_filter=0) -> LayerDataTuple:
+                  add_filter=0,
+                  initialize_filter=0,
+                  result_path=Path(),
+                  save_results=0) -> LayerDataTuple:
     pass
 
 
