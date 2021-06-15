@@ -29,6 +29,23 @@ https://napari.org/docs/plugins/index.html
 You can install `napari-blob-detection` via [pip]:
 
     pip install git+https://github.com/adrtsc/napari-blob-detection.git
+    
+## Examples
+
+If you would like to try the examples make sure that you have jupyter notebook installed and do the following:
+
+    git clone https://github.com/adrtsc/napari-blob-detection
+    cd napari-blob-detection/examples/
+    
+Then, if you want to try the 2D example:
+
+    jupyter notebook blob_detection_example.ipynb
+    
+ And for the 3D example:
+ 
+    jupyter notebook blob_detection_example_3D.ipynb
+
+
 
 ## Contributing
 
