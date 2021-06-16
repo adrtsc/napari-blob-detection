@@ -64,21 +64,31 @@ class Detector(Enum):
     DoG = "blob_dog"
     DoH = "blob_doh"
 
-@magic_factory(call_button="Detect blobs",
-               marker={"choices": ['disc', 'ring', 'diamond']},
-               threshold={"step": 10e-15},
+@magic_factory(layer={'tooltip': '2D or 3D ndarray. Input grayscale image, blobs are assumed to be light on dark background (white on black).'},
+               detector={'tooltip': 'Detection algorithm to use. LoG = Laplacian of Gaussian, DoG = Difference of Gaussian, DoH = Determinant of Hessian'},
+               min_sigma={'tooltip': 'scalar or sequence of scalars, optional. The minimum standard deviation for Gaussian kernel. Keep this low to detect smaller blobs. The standard deviations of the Gaussian filter are given for each axis as a sequence, or as a single number, in which case it is equal for all axes.'},
+               max_sigma={'tooltip': 'scalar or sequence of scalars, optional. The maximum standard deviation for Gaussian kernel. Keep this high to detect larger blobs. The standard deviations of the Gaussian filter are given for each axis as a sequence, or as a single number, in which case it is equal for all axes.'},
+               num_sigma={'tooltip': 'int, optional.The number of intermediate values of standard deviations to consider between min_sigma and max_sigma.'},
+               overlap={'tooltip': 'float, optional. A value between 0 and 1. If the area of two blobs overlaps by a fraction greater than threshold, the smaller blob is eliminated.'},
+               log_scale={'tooltip': 'bool, optional. If set intermediate values of standard deviations are interpolated using a logarithmic scale to the base 10. If not, linear interpolation is used.'},
+               exclude_border={'tooltip': 'tuple of ints, int, or False, optional. If tuple of ints, the length of the tuple must match the input array’s dimensionality. Each element of the tuple will exclude peaks from within exclude_border-pixels of the border of the image along that dimension. If nonzero int, exclude_border excludes peaks from within exclude_border-pixels of the border of the image. If zero or False, peaks are identified regardless of their distance from the border.'},
+               call_button="Detect blobs",
+               marker={"choices": ['disc', 'ring', 'diamond'], 
+                       'tooltip': 'marker to represent the detected blobs'},
+               threshold={"step": 10e-15,
+                          "tooltip": 'float, optional. The absolute lower bound for scale space maxima. Local maxima smaller than thresh are ignored. Reduce this to detect blobs with less intensities.'},
                widget_init=init)
                
 def blob_detection(
     layer: Image,
     viewer: Viewer,
     detector: Detector,
-    min_sigma=1,
-    max_sigma=50,
+    min_sigma=1.00,
+    max_sigma=50.00,
     sigma_ratio=1.6,
     num_sigma=10,
-    threshold=0.2,
-    overlap=0.5,
+    threshold=0.200000,
+    overlap=0.50,
     log_scale=False,
     exclude_border=False,
     marker='disc') -> LayerDataTuple:
