@@ -66,7 +66,7 @@ class Detector(Enum):
 
 @magic_factory(layer={'tooltip': '2D or 3D ndarray. Input grayscale image, blobs are assumed to be light on dark background (white on black).'},
                detector={'tooltip': 'Detection algorithm to use. LoG = Laplacian of Gaussian, DoG = Difference of Gaussian, DoH = Determinant of Hessian'},
-               min_sigma={'tooltip': 'scalar or sequence of scalars, optional. The minimum standard deviation for Gaussian kernel. Keep this low to detect smaller blobs. The standard deviations of the Gaussian filter are given for each axis as a sequence, or as a single number, in which case it is equal for all axes.'},
+               min_sigma={'tooltip': 'scalar or sequence of scalars, optional. σ \u2248 diameter/(2*√2). The minimum standard deviation for Gaussian kernel. Keep this low to detect smaller blobs. The standard deviations of the Gaussian filter are given for each axis as a sequence, or as a single number, in which case it is equal for all axes.'},
                max_sigma={'tooltip': 'scalar or sequence of scalars, optional. The maximum standard deviation for Gaussian kernel. Keep this high to detect larger blobs. The standard deviations of the Gaussian filter are given for each axis as a sequence, or as a single number, in which case it is equal for all axes.'},
                num_sigma={'tooltip': 'int, optional.The number of intermediate values of standard deviations to consider between min_sigma and max_sigma.'},
                overlap={'tooltip': 'float, optional. A value between 0 and 1. If the area of two blobs overlaps by a fraction greater than threshold, the smaller blob is eliminated.'},
