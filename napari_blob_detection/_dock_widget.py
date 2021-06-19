@@ -434,7 +434,40 @@ def subfilter(feature: Feature,
     
 
 ##############################################################################
+def selector_init(widget):
     
+    @widget.blob_class.changed.connect
+    def update_blob_color(event):
+        if widget.blob_class.value == 1:
+            widget.points_layer.value.current_face_color = "yellow"
+            widget.points_layer.value.current_edge_color = "yellow"
+        elif widget.blob_class.value == 2:
+            widget.points_layer.value.current_face_color = "gray"
+            widget.points_layer.value.current_edge_color = "gray"
+    
+     
+@magic_factory(blob_class={'widget_type': 'RadioButtons',
+                             "orientation": "horizontal",
+                             "choices": [("foreground", 1), ("background", 2)]},
+               widget_init=selector_init)
+def selection_widget(points_layer: Points,
+                     viewer: Viewer,
+                     blob_class=2) -> LayerDataTuple:
+    
+    
+    ''''this part isn't really needed, just use "add points" tool 
+    that is already part of the layer
+    '''
+    
+    # @points_layer.mouse_drag_callbacks.append
+    # def add_points(layer, event):
+    #     points_layer.add(points_layer.coordinates)
+    #     yield
+    #     while event.type == 'mouse_move':
+    #         points_layer.add(points_layer.coordinates)
+    #         yield
+    
+    print("running classifier")
 
 
 @napari_hook_implementation
