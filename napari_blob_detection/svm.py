@@ -2,7 +2,7 @@
 """
 Created on Mon Apr 20 16:35:47 2020
 
-@author: Adria
+@author: Adrian
 """
 
 from sklearn.model_selection import train_test_split
@@ -25,17 +25,11 @@ class SVM():
 
     def train_svm(self):
 
-        training_data = self.training_data
-        labels = self.labels
-        split_ratio = self.split_ratio
-        columns = self.columns
-
-        # %%
         #######################################################################
         # PREPARE TRAINING SET AND TEST SET FOR CROSS VALIDATION
         #######################################################################
 
-        training_data = training_data[columns]
+        training_data = self.training_data[self.columns]
 
         # split the annotatedtraining_data into training and test set
 
@@ -43,9 +37,9 @@ class SVM():
          test_set,
          training_set_labels,
          test_set_labels) = train_test_split(training_data,
-                                             labels,
-                                             test_size=split_ratio,
-                                             train_size=1-split_ratio,
+                                             self.labels,
+                                             test_size=self.split_ratio,
+                                             train_size=1-self.split_ratio,
                                              random_state=None)
         # normalize/scale thetraining_data
         # (important for PCA and SVM perfomance).
@@ -55,7 +49,6 @@ class SVM():
         training_set_transformed = scaler.fit_transform(training_set)
         training_set_transformed = pd.DataFrame(training_set_transformed)
 
-        # %%
         #######################################################################
         # Randomized Parameter Optimization
         #######################################################################
@@ -74,11 +67,10 @@ class SVM():
                     print("")
 
         # specify parameters and distributions to sample from
-        class_weight = self.weights
         clf = svm.SVC()
         param_dist = {'C': scipy.stats.expon(scale=100),
                       'gamma': scipy.stats.expon(scale=.1),
-                      'kernel': ['rbf'], 'class_weight': [class_weight, None]}
+                      'kernel': ['rbf'], 'class_weight': [self.weights, None]}
         n_iter_search = 100
         random_search = RandomizedSearchCV(clf, param_distributions=param_dist,
                                            n_iter=n_iter_search,
@@ -118,12 +110,9 @@ class SVM():
 
     def classify(self, data):
 
-        scaler = self.scaler
-        columns = self.columns
-
         # classify
-        data2 = data[columns]
-        data_transformed = scaler.transform(data2)
+        data2 = data[self.columns]
+        data_transformed = self.scaler.transform(data2)
         data_transformed = pd.DataFrame(data_transformed)
 
         classification = self.random_search.predict(data_transformed)

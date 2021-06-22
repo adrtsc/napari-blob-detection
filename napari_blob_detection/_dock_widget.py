@@ -438,6 +438,15 @@ def subfilter(feature: Feature,
 ##############################################################################
 def selector_init(widget):
     
+    @widget.initialize_layers.changed.connect
+    def initialize_layers(event):
+        widget.points_layer.value.current_size=widget.clf_layer.value.size.mean()
+        widget.points_layer.value.current_face_color = "yellow"
+        widget.points_layer.value.current_edge_color = "yellow"
+        widget.points_layer.value.mode = 'add'
+        
+        # to-do: make the points_layer the active layer upon initialization
+    
     @widget.blob_class.changed.connect
     def update_blob_color(event):
         if widget.blob_class.value == 1:
@@ -476,7 +485,9 @@ def selector_init(widget):
      
 @magic_factory(blob_class={'widget_type': 'RadioButtons',
                              "orientation": "horizontal",
+                             'value': 1,
                              "choices": [("foreground", 1), ("background", 2)]},
+               initialize_layers={'widget_type': 'PushButton'},
                save_classifier={'widget_type': 'PushButton'},
                clf_path={'mode': 'w', 'label': 'save classifier'},
                apply_classifier={'widget_type': 'PushButton'},
@@ -486,6 +497,7 @@ def selection_widget(points_layer: Points,
                      clf_layer : Points,
                      clf_img_layer: Image,
                      viewer: Viewer,
+                     initialize_layers=0,
                      blob_class=2,
                      clf_path = Path(),
                      save_classifier=0,
