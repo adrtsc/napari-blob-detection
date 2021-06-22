@@ -30,6 +30,10 @@ You can install `napari-blob-detection` via [pip]:
 
     pip install git+https://github.com/adrtsc/napari-blob-detection.git
     
+You will need a recent version of magicgui with some bugfixes for proper visualization:
+
+    pip install git+https://github.com/napari/magicgui.git
+    
 ## Examples
 
 If you would like to try the examples make sure that you have jupyter notebook installed and do the following:
