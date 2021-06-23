@@ -4,9 +4,7 @@ Created on Thu May 13 06:13:09 2021
 
 @author: Adrian
 """
-%gui qt5
 import napari
-import napari_blob_detection
 
 from skimage import data
 from skimage.color import rgb2gray
