@@ -510,7 +510,9 @@ def selection_widget(points_layer: Points,
                        return_inverse=True)[1]
     
     weights = np.unique(labels, return_counts=True)[0]
-    selection_widget.training_data = data_df
+    selection_widget.training_data = data_df.drop(['z_coordinates',
+                                                   'y_coordinates',
+                                                   'x_coordinates'], axis=1)
     
     selection_widget.clf = SVM(training_data=selection_widget.training_data,
                                labels=labels,
