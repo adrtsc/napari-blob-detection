@@ -402,7 +402,7 @@ def selector_init(widget):
                                                  'size_y',
                                                  'size_x']],
                                        name='result',
-                                       opactiy=0.5)
+                                       opacity=0.5)
         
      
 @magic_factory(blob_class={'widget_type': 'RadioButtons',
