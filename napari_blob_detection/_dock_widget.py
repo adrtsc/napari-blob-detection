@@ -8,6 +8,7 @@ Replace code below according to your needs.
 """
 import numpy as np
 import pandas as pd
+import pickle
 
 
 from napari_plugin_engine import napari_hook_implementation
@@ -15,12 +16,12 @@ from skimage.feature import blob_dog, blob_log, blob_doh
 from napari.types import LayerDataTuple, ImageData
 from napari.layers import Image, Points
 from magicgui import magic_factory
-from skimage.draw import disk
 from napari import Viewer
 from pathlib import Path
 from enum import Enum
 from math import sqrt
-
+from .svm import SVM
+from .measure_blobs import measure_blobs
 
 
 def init(widget):
@@ -145,7 +146,7 @@ def blob_detection(
     viewer.window.add_dock_widget(filter_instance, name="Filter widget") 
 
     return (output, {'size': size, 'symbol': marker,
-                      'name':detector.value, 'opacity': 0.5}, 'points')
+                      'name': detector.value, 'opacity': 0.5}, 'points')
 
 
 def filter_init(widget):
@@ -157,96 +158,8 @@ def filter_init(widget):
         
         coordinates = widget.points_layer.value.data
         sizes = widget.points_layer.value.size
-        
-        # if widget.img.value.ndim == 2:
-            
-        #     coordinates = np.pad(sizes, [(0, 0), (1, 0)])
-        #     sizes = np.pad(sizes, [(0, 0), (1, 0)])
-                                                              
-            
-        data = np.column_stack((coordinates, sizes))
-        
-        
-        data_df = pd.DataFrame(data, columns=['z_coordinates',
-                                              'y_coordinates', 
-                                              'x_coordinates',
-                                              'size_z',
-                                              'size_y',
-                                              'size_x'])
-    
-        min_intensity = []
-        max_intensity = []
-        mean_intensity = []
-        var_intensity = []
-        mean_bg_intensity = []
-        
-        for index, row in data_df.iterrows():
-            
-            if widget.img.value.ndim == 2:
-            
-                c_img = widget.img.value.data
-                
-            else:
-                
-                c_img = widget.img.value.data[row['z_coordinates'].astype("int"), :, :]
-                
-            
-            rr, cc = disk(tuple(row[1:3]), row['size_y'],
-                          shape=np.shape(c_img))
-            
-            rr_bg, cc_bg = disk(tuple(row[1:3]),
-                              2*row['size_y'],
-                              shape=np.shape(c_img))
-            
-            pixels = c_img[rr, cc]
-            pixels_bg = c_img[rr_bg, cc_bg]
-            
-            n_pixels = len(pixels)
-            n_pixels_bg = len(pixels_bg)
-            
-            mean_bg_intensity.append((np.sum(pixels_bg) - np.sum(pixels)) 
-                                      / (n_pixels_bg - n_pixels))
-            
-            mean_intensity.append(np.mean(pixels))
-            
-            min_intensity.append(np.min(pixels))
-            max_intensity.append(np.max(pixels))
-            var_intensity.append(np.var(pixels))
-        
-        ''' Tried to have measurements for spheres for each spot
-        but I think that was computationally too expensive'''
-        
-        # for index, row in data_df.iterrows():
-            
-        #     sim = nltools.Simulator()
-        #     sim.brain_mask = sim.to_nifti(np.ones(widget.img.value.shape, dtype="int"))
-        #     sphere = sim.sphere(p=row[0:3], r=row['size_y'])
-        #     bg_sphere = sim.sphere(p=row[0:3], r=row['size_y']*2)
-            
-        #     pixels = widget.img.value[sphere==1]
-            
-        #     pixels_bg = widget.img.value[bg_sphere==1]
-            
-        #     n_pixels = len(pixels)
-        #     n_pixels_bg = len(pixels_bg)
-            
-        #     mean_bg_intensity.append((np.sum(pixels_bg) - np.sum(pixels)) 
-        #                               / (n_pixels_bg - n_pixels))
-            
-        #     mean_intensity.append(np.mean(pixels))
-            
-        #     min_intensity.append(np.min(pixels))
-        #     max_intensity.append(np.max(pixels))
-        #     var_intensity.append(np.var(pixels))
-        
-        data_df['min_intensity'] = min_intensity
-        data_df['max_intensity'] = max_intensity
-        data_df['mean_intensity'] = mean_intensity 
-        data_df['var_intensity'] = var_intensity
-        data_df['mean_background_intensity'] = mean_bg_intensity
-        data_df['SNR'] = np.array(mean_intensity)/np.array(mean_bg_intensity)
-        
-        
+                  
+        data_df = measure_blobs(coordinates, sizes, widget.img.value.data)
         widget.data_df.value = data_df
         widget.filter_df.value = pd.DataFrame()
         
@@ -288,12 +201,22 @@ def filter_init(widget):
                 
                 data_df = widget.data_df.value
                 df_filtered = data_df.loc[widget.filter_df.value.all(axis=1)]
-                output = df_filtered[['z_coordinates', 
-                                      'y_coordinates', 
-                                      'x_coordinates']]
-                new_size = df_filtered[['size_z', 'size_y', 'size_x']]
+
+                if widget.points_layer.value.ndim == 3:
+                    output = df_filtered[['z_coordinates',
+                                          'y_coordinates',
+                                          'x_coordinates']]
+                    new_size = df_filtered[['size_z', 'size_y', 'size_x']]
+
+                elif widget.points_layer.value.ndim == 2:
+                    output = df_filtered[['y_coordinates',
+                                          'x_coordinates']]
+                    new_size = df_filtered[['size_y', 'size_x']]
+
                 widget.points_layer.value.data = output
                 widget.points_layer.value.size = new_size
+                widget.points_layer.value.selected_data.clear()
+                widget.points_layer.value.refresh()
                 
             @sf.feature.changed.connect
             def update_threshold(event):
@@ -363,7 +286,7 @@ def filter_widget(img: Image,
                   add_filter=0,
                   initialize_filter=0,
                   result_path=Path(),
-                  save_results=0) -> LayerDataTuple:
+                  save_results=0):
     pass
 
 
@@ -373,7 +296,7 @@ def filter_widget(img: Image,
                layout='horizontal')
 def subfilter(feature: Feature,
               threshold=0,
-              delete=0) -> LayerDataTuple:
+              delete=0):
     pass
 
 
@@ -434,12 +357,153 @@ def subfilter(feature: Feature,
     
 
 ##############################################################################
+def selector_init(widget):
+    
+    @widget.initialize_layers.changed.connect
+    def initialize_layers(event):
+        widget.points_layer.value.current_size=widget.clf_layer.value.size.mean()
+        widget.points_layer.value.current_face_color = "yellow"
+        widget.points_layer.value.current_edge_color = "yellow"
+        widget.points_layer.value.mode = 'add'
+        
+        # to-do: make the points_layer the active layer upon initialization
+    
+    @widget.blob_class.changed.connect
+    def update_blob_color(event):
+        if widget.blob_class.value == 1:
+            widget.points_layer.value.current_face_color = "yellow"
+            widget.points_layer.value.current_edge_color = "yellow"
+        elif widget.blob_class.value == 2:
+            widget.points_layer.value.current_face_color = "gray"
+            widget.points_layer.value.current_edge_color = "gray"
+    
+    @widget.save_classifier.changed.connect
+    def save_classifier(event):
+        
+        with open(widget.clf_path.value, "wb") as fp:   #Pickling
+            pickle.dump(widget.clf, fp) 
+            
+        print('classifer has been saved')
+        
+    @widget.apply_classifier.changed.connect
+    def apply_classifier(event):
+        blobs = measure_blobs(widget.clf_layer.value.data,
+                              widget.clf_layer.value.size,
+                              widget.clf_img_layer.value.data)
+        
+        widget.result = widget.clf.classify(blobs)
+        
+        pos = widget.result.loc[widget.result['classification'] == 1]
+        
+        widget.viewer.value.add_points(pos[['z_coordinates',
+                                            'y_coordinates',
+                                            'x_coordinates']],
+                                       size=pos[['size_z',
+                                                 'size_y',
+                                                 'size_x']],
+                                       name='result')
+        
+     
+@magic_factory(blob_class={'widget_type': 'RadioButtons',
+                             "orientation": "horizontal",
+                             'value': 1,
+                             "choices": [("foreground", 1), ("background", 2)]},
+               initialize_layers={'widget_type': 'PushButton'},
+               save_classifier={'widget_type': 'PushButton'},
+               clf_path={'mode': 'w', 'label': 'save classifier'},
+               apply_classifier={'widget_type': 'PushButton'},
+               widget_init=selector_init)
+def selection_widget(points_layer: Points,
+                     img_layer: Image,
+                     clf_layer : Points,
+                     clf_img_layer: Image,
+                     viewer: Viewer,
+                     initialize_layers=0,
+                     blob_class=2,
+                     clf_path = Path(),
+                     save_classifier=0,
+                     apply_classifier=0):
+    
+    data_df = measure_blobs(points_layer.data,
+                            points_layer.size,
+                            img_layer.data)
+    labels = np.unique(np.mean(points_layer.face_color, axis=1),
+                       return_inverse=True)[1]
+    
+    weights = np.unique(labels, return_counts=True)[0]
+    selection_widget.training_data = data_df.drop(['z_coordinates',
+                                                   'y_coordinates',
+                                                   'x_coordinates'], axis=1)
+    
+    selection_widget.clf = SVM(training_data=selection_widget.training_data,
+                               labels=labels,
+                               split_ratio=0.2,
+                               weights={0:1, 1:weights[0]/weights[1]},
+                               columns=selection_widget.training_data.columns)
+    
+    selection_widget.clf.train_svm()
+    
+    print("classifier has been trained")
+    
+    
+    ''''this part isn't really needed, just use "add points" tool 
+    that is already part of the layer
+    '''
+    
+    # @points_layer.mouse_drag_callbacks.append
+    # def add_points(layer, event):
+    #     points_layer.add(points_layer.coordinates)
+    #     yield
+    #     while event.type == 'mouse_move':
+    #         points_layer.add(points_layer.coordinates)
+    #         yield
     
 
+    
+    
+def loader_init(widget):
+    
+    @widget.blob_path.changed.connect
+    def update_default_choice(event):
+        
+        widget.df = pd.read_csv(widget.blob_path.value)
+        
+        widget.z_coordinates.choices = list(widget.df.columns)
+        widget.x_coordinates.choices = list(widget.df.columns)
+        widget.y_coordinates.choices = list(widget.df.columns)
+        
+        if "z_coordinates" in widget.df.columns:
+            widget.z_coordinates.value = "z_coordinates"
+        if "x_coordinates" in widget.df.columns:
+            widget.y_coordinates.value = "y_coordinates"
+        if "y_coordinates" in widget.df.columns:
+            widget.x_coordinates.value = "x_coordinates"
+    
+     
+@magic_factory(blob_path={'mode': 'r', 'label': 'path to csv'},
+               z_coordinates={"choices": [""]},
+               y_coordinates={"choices": [""]},
+               x_coordinates={"choices": [""]},
+               widget_init=loader_init)
+def loading_widget(blob_path=Path(),
+                   z_coordinates="",
+                   y_coordinates="",
+                   x_coordinates="",) -> LayerDataTuple:
+    
+    output = loading_widget.df[['z_coordinates',
+                                'y_coordinates',
+                                'x_coordinates']]
+    size = loading_widget.df[['size_z',
+                              'size_y',
+                              'size_x']]
+    
+    return (output, {'size': size, 'symbol': 'disc',
+                      'name':'blobs', 'opacity': 0.5}, 'points')
 
 @napari_hook_implementation
 def napari_experimental_provide_dock_widget():
     # you can return either a single widget, or a sequence of widgets
-    return [blob_detection, filter_widget]
+    return [blob_detection, filter_widget, selection_widget, loading_widget]
+
 
 

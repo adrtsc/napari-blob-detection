@@ -6,3 +6,4 @@ pandas
 matplotlib
 PyQt5
 qtpy
+sklearn
