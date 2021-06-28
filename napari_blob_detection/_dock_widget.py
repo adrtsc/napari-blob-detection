@@ -368,14 +368,14 @@ def selector_init(widget):
         
         # to-do: make the points_layer the active layer upon initialization
     
-    @widget.blob_class.changed.connect
-    def update_blob_color(event):
-        if widget.blob_class.value == 1:
-            widget.points_layer.value.current_face_color = "yellow"
-            widget.points_layer.value.current_edge_color = "yellow"
-        elif widget.blob_class.value == 2:
-            widget.points_layer.value.current_face_color = "gray"
-            widget.points_layer.value.current_edge_color = "gray"
+        @widget.blob_class.changed.connect
+        def update_blob_color(event):
+            if widget.blob_class.value == 1:
+                widget.points_layer.value.current_face_color = "yellow"
+                widget.points_layer.value.current_edge_color = "yellow"
+            elif widget.blob_class.value == 2:
+                widget.points_layer.value.current_face_color = "gray"
+                widget.points_layer.value.current_edge_color = "gray"
     
     @widget.save_classifier.changed.connect
     def save_classifier(event):
@@ -401,7 +401,8 @@ def selector_init(widget):
                                        size=pos[['size_z',
                                                  'size_y',
                                                  'size_x']],
-                                       name='result')
+                                       name='result',
+                                       opactiy=0.5)
         
      
 @magic_factory(blob_class={'widget_type': 'RadioButtons',
