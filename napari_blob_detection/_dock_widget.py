@@ -235,7 +235,7 @@ def blob_detection(
     viewer.window.add_dock_widget(filter_instance, name="Filter widget") 
 
     return (output, {'size': size, 'symbol': marker,
-                      'name':detector.value, 'opacity': 0.5}, 'points')
+                      'name': detector.value, 'opacity': 0.5}, 'points')
 
 
 def filter_init(widget):
@@ -290,12 +290,22 @@ def filter_init(widget):
                 
                 data_df = widget.data_df.value
                 df_filtered = data_df.loc[widget.filter_df.value.all(axis=1)]
-                output = df_filtered[['z_coordinates', 
-                                      'y_coordinates', 
-                                      'x_coordinates']]
-                new_size = df_filtered[['size_z', 'size_y', 'size_x']]
+
+                if widget.points_layer.value.ndim == 3:
+                    output = df_filtered[['z_coordinates',
+                                          'y_coordinates',
+                                          'x_coordinates']]
+                    new_size = df_filtered[['size_z', 'size_y', 'size_x']]
+
+                elif widget.points_layer.value.ndim == 2:
+                    output = df_filtered[['y_coordinates',
+                                          'x_coordinates']]
+                    new_size = df_filtered[['size_y', 'size_x']]
+
                 widget.points_layer.value.data = output
                 widget.points_layer.value.size = new_size
+                widget.points_layer.value.selected_data.clear()
+                widget.points_layer.value.refresh()
                 
             @sf.feature.changed.connect
             def update_threshold(event):
