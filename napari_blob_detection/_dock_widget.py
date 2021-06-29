@@ -20,8 +20,8 @@ from napari import Viewer
 from pathlib import Path
 from enum import Enum
 from math import sqrt
-from .svm import SVM
-from .measure_blobs import measure_blobs
+from napari_blob_detection.svm import SVM
+from napari_blob_detection.measure_blobs import measure_blobs
 
 
 def init(widget):

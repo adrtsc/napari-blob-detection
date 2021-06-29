@@ -61,6 +61,7 @@ class SVM():
         n_iter_search = 100
         random_search = RandomizedSearchCV(clf, param_distributions=param_dist,
                                            n_iter=n_iter_search,
+                                           scoring="f1",
                                            cv=5)
 
         random_search.fit(training_set_transformed, training_set_labels)
