@@ -365,6 +365,15 @@ def selector_init(widget):
         widget.points_layer.value.current_face_color = "yellow"
         widget.points_layer.value.current_edge_color = "yellow"
         widget.points_layer.value.mode = 'add'
+
+        if hasattr(widget, "data_df") == False:
+            widget.data_df = pd.DataFrame(columns=['z_coordinates',
+                                                   'y_coordinates',
+                                                   'x_coordinates',
+                                                   'size_z',
+                                                   'size_y',
+                                                   'size_x'])
+            widget.labels = list()
         
         # to-do: make the points_layer the active layer upon initialization
     
@@ -384,7 +393,19 @@ def selector_init(widget):
             pickle.dump(widget.clf, fp) 
             
         print('classifer has been saved')
-        
+
+    @widget.add_training_data.changed.connect
+    def add_training_data(event):
+        data_df = measure_blobs(widget.points_layer.value.data,
+                                widget.points_layer.value.size,
+                                widget.img_layer.value.data)
+        labels = np.unique(np.mean(widget.points_layer.value.face_color, axis=1), return_inverse=True)[1]
+
+        widget.data_df = widget.data_df.append(data_df)
+        widget.labels.extend(labels)
+
+        print("training data was added")
+
     @widget.apply_classifier.changed.connect
     def apply_classifier(event):
         blobs = measure_blobs(widget.clf_layer.value.data,
@@ -403,16 +424,17 @@ def selector_init(widget):
                                                  'size_x']],
                                        name='result',
                                        opacity=0.5)
-        
-     
+
+
 @magic_factory(blob_class={'widget_type': 'RadioButtons',
-                             "orientation": "horizontal",
-                             'value': 1,
-                             "choices": [("foreground", 1), ("background", 2)]},
+                           "orientation": "horizontal",
+                           'value': 1,
+                           "choices": [("foreground", 1), ("background", 2)]},
                initialize_layers={'widget_type': 'PushButton'},
                save_classifier={'widget_type': 'PushButton'},
                clf_path={'mode': 'w', 'label': 'save classifier'},
                apply_classifier={'widget_type': 'PushButton'},
+               add_training_data={'widget_type': 'PushButton'},
                widget_init=selector_init)
 def selection_widget(points_layer: Points,
                      img_layer: Image,
@@ -423,21 +445,16 @@ def selection_widget(points_layer: Points,
                      blob_class=2,
                      clf_path = Path(),
                      save_classifier=0,
-                     apply_classifier=0):
+                     apply_classifier=0,
+                     add_training_data=0):
     
-    data_df = measure_blobs(points_layer.data,
-                            points_layer.size,
-                            img_layer.data)
-    labels = np.unique(np.mean(points_layer.face_color, axis=1),
-                       return_inverse=True)[1]
-    
-    weights = np.unique(labels, return_counts=True)[0]
-    selection_widget.training_data = data_df.drop(['z_coordinates',
-                                                   'y_coordinates',
-                                                   'x_coordinates'], axis=1)
+    weights = np.unique(selection_widget.labels, return_counts=True)[0]
+    selection_widget.training_data = selection_widget.data_df.drop(['z_coordinates',
+                                                                    'y_coordinates',
+                                                                    'x_coordinates'], axis=1)
     
     selection_widget.clf = SVM(training_data=selection_widget.training_data,
-                               labels=labels,
+                               labels=selection_widget.labels,
                                split_ratio=0.2,
                                weights={0:1, 1:weights[0]/weights[1]},
                                columns=selection_widget.training_data.columns)
