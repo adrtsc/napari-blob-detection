@@ -361,31 +361,27 @@ def selector_init(widget):
     
     @widget.initialize_layers.changed.connect
     def initialize_layers(event):
-        widget.points_layer.value.current_size=widget.clf_layer.value.size.mean()
-        widget.points_layer.value.current_face_color = "yellow"
-        widget.points_layer.value.current_edge_color = "yellow"
-        widget.points_layer.value.mode = 'add'
+        widget.points_layer.value.current_size=widget.points_layer.value.size.mean()
+        widget.points_layer.value.current_face_color = "orange"
+        widget.points_layer.value.current_edge_color = "orange"
+        widget.points_layer.value.mode = 'select'
+        @widget.points_layer.value.events.current_properties.connect
+        def _on_selecting(event):
+            if len(widget.points_layer.value.selected_data) > 0:
+                print(widget.points_layer.value.selected_data)
+                selected_id = widget.points_layer.value.selected_data
+                selected_points = widget.points_layer.value.data[list(selected_id)]
+                widget.points_layer.value.remove_selected()
 
-        if hasattr(widget, "data_df") == False:
-            widget.data_df = pd.DataFrame(columns=['z_coordinates',
-                                                   'y_coordinates',
-                                                   'x_coordinates',
-                                                   'size_z',
-                                                   'size_y',
-                                                   'size_x'])
-            widget.labels = list()
-        
-        # to-do: make the points_layer the active layer upon initialization
-    
-        @widget.blob_class.changed.connect
-        def update_blob_color(event):
-            if widget.blob_class.value == 1:
-                widget.points_layer.value.current_face_color = "yellow"
-                widget.points_layer.value.current_edge_color = "yellow"
-            elif widget.blob_class.value == 2:
-                widget.points_layer.value.current_face_color = "gray"
-                widget.points_layer.value.current_edge_color = "gray"
-    
+                if widget.blob_class.value == 1:
+                    widget.points_layer.value.current_face_color = "orange"
+                    widget.points_layer.value.current_edge_color = "orange"
+                elif widget.blob_class.value == 2:
+                    widget.points_layer.value.current_face_color = "gray"
+                    widget.points_layer.value.current_edge_color = "gray"
+
+                widget.points_layer.value.add(selected_points)
+
     @widget.save_classifier.changed.connect
     def save_classifier(event):
         
@@ -394,23 +390,11 @@ def selector_init(widget):
             
         print('classifer has been saved')
 
-    @widget.add_training_data.changed.connect
-    def add_training_data(event):
-        data_df = measure_blobs(widget.points_layer.value.data,
-                                widget.points_layer.value.size,
-                                widget.img_layer.value.data)
-        labels = np.unique(np.mean(widget.points_layer.value.face_color, axis=1), return_inverse=True)[1]
-
-        widget.data_df = widget.data_df.append(data_df)
-        widget.labels.extend(labels)
-
-        print("training data was added")
-
     @widget.apply_classifier.changed.connect
     def apply_classifier(event):
-        blobs = measure_blobs(widget.clf_layer.value.data,
-                              widget.clf_layer.value.size,
-                              widget.clf_img_layer.value.data)
+        blobs = measure_blobs(widget.points_layer.value.data,
+                              widget.points_layer.value.size,
+                              widget.img_layer.value.data)
         
         widget.result = widget.clf.classify(blobs)
         
@@ -434,27 +418,31 @@ def selector_init(widget):
                save_classifier={'widget_type': 'PushButton'},
                clf_path={'mode': 'w', 'label': 'save classifier'},
                apply_classifier={'widget_type': 'PushButton'},
-               add_training_data={'widget_type': 'PushButton'},
                widget_init=selector_init)
 def selection_widget(points_layer: Points,
                      img_layer: Image,
-                     clf_layer : Points,
-                     clf_img_layer: Image,
                      viewer: Viewer,
                      initialize_layers=0,
                      blob_class=2,
-                     clf_path = Path(),
+                     clf_path=Path(),
                      save_classifier=0,
-                     apply_classifier=0,
-                     add_training_data=0):
+                     apply_classifier=0):
+    data_df = measure_blobs(points_layer.data,
+                            points_layer.size,
+                            img_layer.data)
+    labels = np.unique(np.mean(points_layer.face_color, axis=1),
+                       return_inverse=True)[1]
+    # remove unannotated points
+    data_df = data_df[labels < 2]
+    labels = labels[labels < 2]
     
-    weights = np.unique(selection_widget.labels, return_counts=True)[0]
-    selection_widget.training_data = selection_widget.data_df.drop(['z_coordinates',
-                                                                    'y_coordinates',
-                                                                    'x_coordinates'], axis=1)
+    weights = np.unique(labels, return_counts=True)[1]
+    selection_widget.training_data = data_df.drop(['z_coordinates',
+                                                   'y_coordinates',
+                                                   'x_coordinates'], axis=1)
     
     selection_widget.clf = SVM(training_data=selection_widget.training_data,
-                               labels=selection_widget.labels,
+                               labels=labels,
                                split_ratio=0.2,
                                weights={0:1, 1:weights[0]/weights[1]},
                                columns=selection_widget.training_data.columns)
