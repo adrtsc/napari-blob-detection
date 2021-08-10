@@ -16,6 +16,7 @@ from skimage.feature import blob_dog, blob_log, blob_doh
 from napari.types import LayerDataTuple, ImageData
 from napari.layers import Image, Points
 from magicgui import magic_factory
+from matplotlib import colors
 from napari import Viewer
 from pathlib import Path
 from enum import Enum
@@ -145,8 +146,12 @@ def blob_detection(
     filter_instance = filter_widget()
     viewer.window.add_dock_widget(filter_instance, name="Filter widget") 
 
-    return (output, {'size': size, 'symbol': marker,
-                      'name': detector.value, 'opacity': 0.5}, 'points')
+    return (output, {'size': size,
+                     'symbol': marker,
+                     'name': detector.value,
+                     'edge_color': 'white',
+                     'face_color': 'transparent'},
+            'points')
 
 
 def filter_init(widget):
@@ -365,10 +370,10 @@ def selector_init(widget):
         widget.points_layer.value.current_face_color = "orange"
         widget.points_layer.value.current_edge_color = "orange"
         widget.points_layer.value.mode = 'select'
+        widget.blob_color = widget.points_layer.value.face_color
         @widget.points_layer.value.events.current_properties.connect
         def _on_selecting(event):
             if len(widget.points_layer.value.selected_data) > 0:
-                print(widget.points_layer.value.selected_data)
                 selected_id = widget.points_layer.value.selected_data
                 selected_points = widget.points_layer.value.data[list(selected_id)]
                 widget.points_layer.value.remove_selected()
@@ -398,7 +403,7 @@ def selector_init(widget):
         
         widget.result = widget.clf.classify(blobs)
         
-        pos = widget.result.loc[widget.result['classification'] == 1]
+        pos = widget.result.loc[widget.result['classification'] == 2]
         
         widget.viewer.value.add_points(pos[['z_coordinates',
                                             'y_coordinates',
@@ -431,10 +436,30 @@ def selection_widget(points_layer: Points,
                             points_layer.size,
                             img_layer.data)
     labels = np.unique(np.mean(points_layer.face_color, axis=1),
-                       return_inverse=True)[1]
+                                 return_inverse=True)[1]
+
+    '''
+    we have to find out which color corresponds to unannotated blobs. I do this here by assuming the annotated
+    blobs are orange and gray (standard values) and looking for any color that does not match these two. Then I find
+    the label that was assigned to these blobs (which is not always the same, maybe find a more elegant solution)
+    '''
+
+    '''
+    unique_labels = np.unique(labels)
+
+    annotated_colors = points_layer.face_color
+    unique_colors = np.unique(annotated_colors, axis=0)
+    blob_color = np.unique(selection_widget.blob_color, axis=0)
+
+    unannotated_idx = np.where((unique_colors == blob_color).all(axis=1))
+
+    unannotated_label = unique_labels[unannotated_idx]
+    
+    '''
+
     # remove unannotated points
-    data_df = data_df[labels < 2]
-    labels = labels[labels < 2]
+    data_df = data_df[labels != 0]
+    labels = labels[labels != 0]
     
     weights = np.unique(labels, return_counts=True)[1]
     selection_widget.training_data = data_df.drop(['z_coordinates',
@@ -444,7 +469,7 @@ def selection_widget(points_layer: Points,
     selection_widget.clf = SVM(training_data=selection_widget.training_data,
                                labels=labels,
                                split_ratio=0.2,
-                               weights={0:1, 1:weights[0]/weights[1]},
+                               weights={1:1, 2:weights[0]/weights[1]},
                                columns=selection_widget.training_data.columns)
     
     selection_widget.clf.train_svm()
