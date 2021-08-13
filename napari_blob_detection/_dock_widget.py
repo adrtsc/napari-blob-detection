@@ -367,10 +367,10 @@ def selector_init(widget):
     @widget.initialize_layers.changed.connect
     def initialize_layers(event):
         widget.points_layer.value.current_size=widget.points_layer.value.size.mean()
-        widget.points_layer.value.current_face_color = "orange"
-        widget.points_layer.value.current_edge_color = "orange"
+        widget.points_layer.value.current_face_color = 'orange'
+        widget.points_layer.value.current_edge_color = 'orange'
         widget.points_layer.value.mode = 'select'
-        widget.blob_color = widget.points_layer.value.face_color
+        widget.blob_color = np.unique(widget.points_layer.value.face_color, axis=0).astype('float32')
         @widget.points_layer.value.events.current_properties.connect
         def _on_selecting(event):
             if len(widget.points_layer.value.selected_data) > 0:
@@ -379,11 +379,11 @@ def selector_init(widget):
                 widget.points_layer.value.remove_selected()
 
                 if widget.blob_class.value == 1:
-                    widget.points_layer.value.current_face_color = "orange"
-                    widget.points_layer.value.current_edge_color = "orange"
+                    widget.points_layer.value.current_face_color = 'orange'
+                    widget.points_layer.value.current_edge_color = 'orange'
                 elif widget.blob_class.value == 2:
-                    widget.points_layer.value.current_face_color = "gray"
-                    widget.points_layer.value.current_edge_color = "gray"
+                    widget.points_layer.value.current_face_color = 'gray'
+                    widget.points_layer.value.current_edge_color = 'gray'
 
                 widget.points_layer.value.add(selected_points)
 
@@ -438,6 +438,7 @@ def selection_widget(points_layer: Points,
     labels = np.unique(np.mean(points_layer.face_color, axis=1),
                                  return_inverse=True)[1]
 
+
     '''
     we have to find out which color corresponds to unannotated blobs. I do this here by assuming the annotated
     blobs are orange and gray (standard values) and looking for any color that does not match these two. Then I find
@@ -457,11 +458,26 @@ def selection_widget(points_layer: Points,
     
     '''
 
+    unique_face_colors = np.unique(points_layer.face_color, axis=0).astype("float32")
+
+    # find the indices of all unannotated blobs
+
+    unannotated_label = np.where((unique_face_colors == np.unique(
+        selection_widget.blob_color.astype('float32'), axis=0)).all(axis=1))[0][0]
+    foreground_label = np.where((unique_face_colors == np.array(
+        colors.to_rgba('orange')).astype('float32')).all(axis=1))[0][0]
+    background_label = np.where((unique_face_colors == np.array(
+        colors.to_rgba('gray')).astype('float32')).all(axis=1))[0][0]
+
     # remove unannotated points
-    data_df = data_df[labels != 0]
-    labels = labels[labels != 0]
+    data_df = data_df[labels != unannotated_label]
+    labels = labels[labels != unannotated_label]
     
     weights = np.unique(labels, return_counts=True)[1]
+
+    foreground_idx = np.where(np.unique(labels) == foreground_label)[0][0]
+    background_idx = np.where(np.unique(labels) == background_label)[0][0]
+
     selection_widget.training_data = data_df.drop(['z_coordinates',
                                                    'y_coordinates',
                                                    'x_coordinates'], axis=1)
@@ -469,7 +485,7 @@ def selection_widget(points_layer: Points,
     selection_widget.clf = SVM(training_data=selection_widget.training_data,
                                labels=labels,
                                split_ratio=0.2,
-                               weights={1:1, 2:weights[0]/weights[1]},
+                               weights={background_label:1, foreground_label:weights[background_idx]/weights[foreground_idx]},
                                columns=selection_widget.training_data.columns)
     
     selection_widget.clf.train_svm()
