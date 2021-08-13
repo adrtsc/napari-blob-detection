@@ -6,8 +6,18 @@
 [![tests](https://github.com/adrtsc/napari-blob-detection/workflows/tests/badge.svg)](https://github.com/adrtsc/napari-blob-detection/actions)
 [![codecov](https://codecov.io/gh/adrtsc/napari-blob-detection/branch/master/graph/badge.svg)](https://codecov.io/gh/adrtsc/napari-blob-detection)
 
-napari plugin for blob detection in images. Implements a user interface to use scikit-image blob detection algorithms (https://scikit-image.org/docs/dev/auto_examples/features_detection/plot_blob.html) and an additional widget to filter the detected blobs by a blob feature value (or a combination of feature values).
 
+napari plugin handling multiple aspects of blob detection in images. The plugin consists of multiple widgets:
+
+<ul>
+<li>blob_detection: Implements a user interface to use scikit-image blob detection algorithms (https://scikit-image.org/docs/dev/auto_examples/features_detection/plot_blob.html).</li>
+
+<li>filter_widget: Widget to filter the detected blobs by a blob feature value (or a combination of feature values).</li>
+
+<li>selection_widget: Widget to manually annotate a subset of detected blobs as foreground vs. background blobs. The widget can then use the annotated blobs to train a support vector machine to classify the remaining blobs in the image.</li>
+
+<li>loading_widget: Widget to load previously saved blobs.</li>
+</ul> 
 
 https://user-images.githubusercontent.com/41194383/120099217-b2fb2700-c13a-11eb-9e9a-1c00eaa114c0.mp4
 
