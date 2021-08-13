@@ -16,6 +16,7 @@ from skimage.feature import blob_dog, blob_log, blob_doh
 from napari.types import LayerDataTuple, ImageData
 from napari.layers import Image, Points
 from magicgui import magic_factory
+from matplotlib import colors
 from napari import Viewer
 from pathlib import Path
 from enum import Enum
@@ -145,8 +146,12 @@ def blob_detection(
     filter_instance = filter_widget()
     viewer.window.add_dock_widget(filter_instance, name="Filter widget") 
 
-    return (output, {'size': size, 'symbol': marker,
-                      'name': detector.value, 'opacity': 0.5}, 'points')
+    return (output, {'size': size,
+                     'symbol': marker,
+                     'name': detector.value,
+                     'edge_color': 'white',
+                     'face_color': 'transparent'},
+            'points')
 
 
 def filter_init(widget):
@@ -361,22 +366,27 @@ def selector_init(widget):
     
     @widget.initialize_layers.changed.connect
     def initialize_layers(event):
-        widget.points_layer.value.current_size=widget.clf_layer.value.size.mean()
-        widget.points_layer.value.current_face_color = "yellow"
-        widget.points_layer.value.current_edge_color = "yellow"
-        widget.points_layer.value.mode = 'add'
-        
-        # to-do: make the points_layer the active layer upon initialization
-    
-        @widget.blob_class.changed.connect
-        def update_blob_color(event):
-            if widget.blob_class.value == 1:
-                widget.points_layer.value.current_face_color = "yellow"
-                widget.points_layer.value.current_edge_color = "yellow"
-            elif widget.blob_class.value == 2:
-                widget.points_layer.value.current_face_color = "gray"
-                widget.points_layer.value.current_edge_color = "gray"
-    
+        widget.points_layer.value.current_size=widget.points_layer.value.size.mean()
+        widget.points_layer.value.current_face_color = 'orange'
+        widget.points_layer.value.current_edge_color = 'orange'
+        widget.points_layer.value.mode = 'select'
+        widget.blob_color = np.unique(widget.points_layer.value.face_color, axis=0).astype('float32')
+        @widget.points_layer.value.events.current_properties.connect
+        def _on_selecting(event):
+            if len(widget.points_layer.value.selected_data) > 0:
+                selected_id = widget.points_layer.value.selected_data
+                selected_points = widget.points_layer.value.data[list(selected_id)]
+                widget.points_layer.value.remove_selected()
+
+                if widget.blob_class.value == 1:
+                    widget.points_layer.value.current_face_color = 'orange'
+                    widget.points_layer.value.current_edge_color = 'orange'
+                elif widget.blob_class.value == 2:
+                    widget.points_layer.value.current_face_color = 'gray'
+                    widget.points_layer.value.current_edge_color = 'gray'
+
+                widget.points_layer.value.add(selected_points)
+
     @widget.save_classifier.changed.connect
     def save_classifier(event):
         
@@ -384,16 +394,16 @@ def selector_init(widget):
             pickle.dump(widget.clf, fp) 
             
         print('classifer has been saved')
-        
+
     @widget.apply_classifier.changed.connect
     def apply_classifier(event):
-        blobs = measure_blobs(widget.clf_layer.value.data,
-                              widget.clf_layer.value.size,
-                              widget.clf_img_layer.value.data)
+        blobs = measure_blobs(widget.points_layer.value.data,
+                              widget.points_layer.value.size,
+                              widget.img_layer.value.data)
         
         widget.result = widget.clf.classify(blobs)
         
-        pos = widget.result.loc[widget.result['classification'] == 1]
+        pos = widget.result.loc[widget.result['classification'] == 2]
         
         widget.viewer.value.add_points(pos[['z_coordinates',
                                             'y_coordinates',
@@ -403,12 +413,12 @@ def selector_init(widget):
                                                  'size_x']],
                                        name='result',
                                        opacity=0.5)
-        
-     
+
+
 @magic_factory(blob_class={'widget_type': 'RadioButtons',
-                             "orientation": "horizontal",
-                             'value': 1,
-                             "choices": [("foreground", 1), ("background", 2)]},
+                           "orientation": "horizontal",
+                           'value': 1,
+                           "choices": [("foreground", 1), ("background", 2)]},
                initialize_layers={'widget_type': 'PushButton'},
                save_classifier={'widget_type': 'PushButton'},
                clf_path={'mode': 'w', 'label': 'save classifier'},
@@ -416,22 +426,58 @@ def selector_init(widget):
                widget_init=selector_init)
 def selection_widget(points_layer: Points,
                      img_layer: Image,
-                     clf_layer : Points,
-                     clf_img_layer: Image,
                      viewer: Viewer,
                      initialize_layers=0,
                      blob_class=2,
-                     clf_path = Path(),
+                     clf_path=Path(),
                      save_classifier=0,
                      apply_classifier=0):
-    
     data_df = measure_blobs(points_layer.data,
                             points_layer.size,
                             img_layer.data)
     labels = np.unique(np.mean(points_layer.face_color, axis=1),
-                       return_inverse=True)[1]
+                                 return_inverse=True)[1]
+
+
+    '''
+    we have to find out which color corresponds to unannotated blobs. I do this here by assuming the annotated
+    blobs are orange and gray (standard values) and looking for any color that does not match these two. Then I find
+    the label that was assigned to these blobs (which is not always the same, maybe find a more elegant solution)
+    '''
+
+    '''
+    unique_labels = np.unique(labels)
+
+    annotated_colors = points_layer.face_color
+    unique_colors = np.unique(annotated_colors, axis=0)
+    blob_color = np.unique(selection_widget.blob_color, axis=0)
+
+    unannotated_idx = np.where((unique_colors == blob_color).all(axis=1))
+
+    unannotated_label = unique_labels[unannotated_idx]
     
-    weights = np.unique(labels, return_counts=True)[0]
+    '''
+
+    unique_face_colors = np.unique(points_layer.face_color, axis=0).astype("float32")
+
+    # find the indices of all unannotated blobs
+
+    unannotated_label = np.where((unique_face_colors == np.unique(
+        selection_widget.blob_color.astype('float32'), axis=0)).all(axis=1))[0][0]
+    foreground_label = np.where((unique_face_colors == np.array(
+        colors.to_rgba('orange')).astype('float32')).all(axis=1))[0][0]
+    background_label = np.where((unique_face_colors == np.array(
+        colors.to_rgba('gray')).astype('float32')).all(axis=1))[0][0]
+
+    # remove unannotated points
+    data_df = data_df[labels != unannotated_label]
+    labels = labels[labels != unannotated_label]
+    
+    weights = np.unique(labels, return_counts=True)[1]
+
+    foreground_idx = np.where(np.unique(labels) == foreground_label)[0][0]
+    background_idx = np.where(np.unique(labels) == background_label)[0][0]
+
     selection_widget.training_data = data_df.drop(['z_coordinates',
                                                    'y_coordinates',
                                                    'x_coordinates'], axis=1)
@@ -439,7 +485,7 @@ def selection_widget(points_layer: Points,
     selection_widget.clf = SVM(training_data=selection_widget.training_data,
                                labels=labels,
                                split_ratio=0.2,
-                               weights={0:1, 1:weights[0]/weights[1]},
+                               weights={background_label:1, foreground_label:weights[background_idx]/weights[foreground_idx]},
                                columns=selection_widget.training_data.columns)
     
     selection_widget.clf.train_svm()

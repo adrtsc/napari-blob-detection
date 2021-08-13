@@ -22,6 +22,7 @@ class SVM():
         self.training_data = training_data
         self.labels = labels
         self.split_ratio = split_ratio
+        self.clf = svm.SVC()
 
     def train_svm(self):
 
@@ -31,7 +32,7 @@ class SVM():
 
         training_data = self.training_data[self.columns]
 
-        # split the annotatedtraining_data into training and test set
+        # split the annotated training_data into training and test set
 
         (training_set,
          test_set,
@@ -41,7 +42,7 @@ class SVM():
                                              test_size=self.split_ratio,
                                              train_size=1-self.split_ratio,
                                              random_state=None)
-        # normalize/scale thetraining_data
+        # normalize/scale the training_data
         # (important for PCA and SVM perfomance).
         # scale by Z-scoring (z = (x-mean)/std)
 
@@ -54,19 +55,17 @@ class SVM():
         #######################################################################     
 
         # specify parameters and distributions to sample from
-        clf = svm.SVC()
         param_dist = {'C': scipy.stats.expon(scale=100),
                       'gamma': scipy.stats.expon(scale=.1),
                       'kernel': ['rbf'], 'class_weight': [self.weights, None]}
         n_iter_search = 100
-        random_search = RandomizedSearchCV(clf, param_distributions=param_dist,
+        random_search = RandomizedSearchCV(self.clf, param_distributions=param_dist,
                                            n_iter=n_iter_search,
                                            scoring="f1",
                                            cv=5)
 
         random_search.fit(training_set_transformed, training_set_labels)
 
-        self.clf = clf
         self.random_search = random_search
         self.training_set = training_set
         self.test_set = test_set
