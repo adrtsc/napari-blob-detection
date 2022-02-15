@@ -1,0 +1,25 @@
+name: napari-blob-detection
+schema_version: 0.1.0
+contributions:
+  commands:
+  - id: napari-blob-detection.blob_detection
+    title: Create blob_detection
+    python_name: napari_blob_detection._dock_widget:blob_detection
+  - id: napari-blob-detection.filter_widget
+    title: Create filter_widget
+    python_name: napari_blob_detection._dock_widget:filter_widget
+  - id: napari-blob-detection.selection_widget
+    title: Create selection_widget
+    python_name: napari_blob_detection._dock_widget:selection_widget
+  - id: napari-blob-detection.loading_widget
+    title: Create loading_widget
+    python_name: napari_blob_detection._dock_widget:loading_widget
+  widgets:
+  - command: napari-blob-detection.blob_detection
+    display_name: blob_detection
+  - command: napari-blob-detection.filter_widget
+    display_name: filter_widget
+  - command: napari-blob-detection.selection_widget
+    display_name: selection_widget
+  - command: napari-blob-detection.loading_widget
+    display_name: loading_widget
