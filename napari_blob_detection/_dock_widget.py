@@ -199,7 +199,7 @@ def filter_init(widget):
             
             @sf.threshold.changed.connect
             def apply_filter(event):
-                widget.filter_df.value[sf.name] =  (widget.data_df.value[
+                widget.filter_df.value[sf.name] = (widget.data_df.value[
                     sf.feature.value.value] >= sf.threshold.value)
                 
                 widget.filter_df.value.all(axis=1)
@@ -403,7 +403,7 @@ def selector_init(widget):
         
         widget.result = widget.clf.classify(blobs)
         
-        pos = widget.result.loc[widget.result['classification'] == 2]
+        pos = widget.result.loc[widget.result['classification'] == widget.foreground_label]
         
         widget.viewer.value.add_points(pos[['z_coordinates',
                                             'y_coordinates',
@@ -489,6 +489,10 @@ def selection_widget(points_layer: Points,
                                columns=selection_widget.training_data.columns)
     
     selection_widget.clf.train_svm()
+
+    selection_widget.foreground_label = foreground_label
+    selection_widget.background_label = background_label
+    selection_widget.unannotated_label = unannotated_label
     
     print("classifier has been trained")
     
