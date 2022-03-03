@@ -1,10 +1,3 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Mon Apr 20 16:35:47 2020
-
-@author: Adrian
-"""
-
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import RandomizedSearchCV
@@ -52,7 +45,7 @@ class SVM():
 
         #######################################################################
         # Randomized Parameter Optimization
-        #######################################################################     
+        #######################################################################
 
         # specify parameters and distributions to sample from
         param_dist = {'C': scipy.stats.expon(scale=100),
