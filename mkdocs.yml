@@ -1,0 +1,11 @@
+site_name: napari-blob-detection
+site_description: A napari plugin for blob detection.
+site_author: Adrian Tschan
+
+theme: readthedocs
+
+
+repo_url: https://github.com/adrtsc/napari-blob-detection
+
+pages:
+- Home: index.md
