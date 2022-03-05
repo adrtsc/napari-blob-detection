@@ -132,7 +132,8 @@ def selector_init(widget):
                                             'centroid-2']],
                                        size=pos[['size']],
                                        name='result',
-                                       opacity=0.5,
+                                       edge_color='yellow',
+                                       face_color='transparent',
                                        scale=widget.clf_layer.value.scale)
 
 
