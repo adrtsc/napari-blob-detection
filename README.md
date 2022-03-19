@@ -28,6 +28,10 @@ It's best to create a new python environment to try the plugin:
 
     conda create -n napari-blob-detection python=3.9
     
+Activate the environment:
+
+    conda activate napari-blob-detection
+    
 You will need to install napari and JupyterLab or Jupyter Notebook (if you want to test the examples)
 
     pip install napari[all]
