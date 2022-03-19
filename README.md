@@ -9,6 +9,19 @@
 
 A napari plugin for blob detection.
 
+
+<ul>
+<li>blob_detection: Implements a user interface to use scikit-image blob detection algorithms (https://scikit-image.org/docs/dev/auto_examples/features_detection/plot_blob.html).</li>
+
+<li>filter_widget: Widget to filter the detected blobs by a blob feature value (or a combination of feature values).</li>
+
+<li>selection_widget: Widget to manually annotate a subset of detected blobs as foreground vs. background blobs. The widget can then use the annotated blobs to train a support vector machine to classify the remaining blobs in the image.</li>
+
+<li>loading_widget: Widget to load previously saved blobs.</li>
+</ul> 
+
+https://user-images.githubusercontent.com/41194383/120099217-b2fb2700-c13a-11eb-9e9a-1c00eaa114c0.mp4
+
 ----------------------------------
 
 This [napari] plugin was generated with [Cookiecutter] using [@napari]'s [cookiecutter-napari-plugin] template.
@@ -23,16 +36,30 @@ https://napari.org/plugins/stable/index.html
 
 ## Installation
 
-You can install `napari-blob-detection` via [pip]:
+It's best to create a new python environment to try the plugin:
 
-    pip install napari-blob-detection
+    conda create -n napari-blob-detection python=3.9
+    
+You will need to install napari and JupyterLab or Jupyter Notebook (if you want to test the examples)
 
+    pip install napari[all]
+    pip install jupyterlab
 
-
-To install latest development version :
+You can then install `napari-blob-detection` via [pip]:
 
     pip install git+https://github.com/adrtsc/napari-blob-detection.git
 
+## Examples
+
+To try the example jupyter notebooks do the following:
+
+    git clone https://github.com/adrtsc/napari-blob-detection
+    cd napari-blob-detection/examples/
+    
+Start JupyterLab
+
+    jupyter lab 
+    
 
 ## Contributing
 
