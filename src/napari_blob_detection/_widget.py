@@ -13,6 +13,7 @@ from napari_blob_detection.measure_blobs import measure_blobs
 from napari_blob_detection.measure_blobs import measure_coordinates
 from napari_blob_detection.svm import SVM
 from napari.types import LayerDataTuple
+from enum import Enum
 from napari.layers import Image, Points
 from magicgui import magic_factory
 from napari import Viewer
@@ -174,3 +175,147 @@ def selection_widget(points_layer: Points,
     selection_widget.clf.train_svm()
 
     print("classifier has been trained")
+
+
+def filter_init(widget):
+    widget.call_button.visible = False
+
+    @widget.initialize_filter.changed.connect
+    def measure(event):
+
+        coordinates = widget.points_layer.value.data
+        sizes = widget.points_layer.value.size
+
+        data_df = measure_coordinates(coordinates, sizes, widget.img.value.data)
+        widget.data_df.value = data_df
+        widget.filter_df.value = pd.DataFrame()
+
+        widget.result_path.visible = True
+        widget.save_results.visible = True
+        widget.add_filter.visible = True
+
+        print("Filter initialized.")
+
+    widget.subfilter_counter = 0
+
+    @widget.add_filter.changed.connect
+    def add_filter(event):
+
+        if isinstance(widget.data_df.value, pd.DataFrame):
+
+            sf = subfilter()
+            sf.label = " "
+            sf.name = "subfilter_%02d" % widget.subfilter_counter
+
+            widget.insert(-4, sf)
+
+            widget.subfilter_counter += 1
+
+            # update min/max threshold
+
+            sf.threshold.max = np.max(
+                widget.data_df.value[sf.feature.value.value])
+            sf.threshold.min = np.min(
+                widget.data_df.value[sf.feature.value.value])
+
+            @sf.threshold.changed.connect
+            def apply_filter(event):
+                widget.filter_df.value[sf.name] = (widget.data_df.value[
+                                                       sf.feature.value.value] >= sf.threshold.value)
+
+                widget.filter_df.value.all(axis=1)
+
+                data_df = widget.data_df.value
+                df_filtered = data_df.loc[widget.filter_df.value.all(axis=1)]
+
+
+                output = df_filtered[['timepoint',
+                                      'centroid-0',
+                                      'centroid-1',
+                                      'centroid-2']]
+                new_size = df_filtered[['size']]
+
+
+                widget.points_layer.value.data = output
+                widget.points_layer.value.size = new_size
+                widget.points_layer.value.selected_data.clear()
+                widget.points_layer.value.refresh()
+
+            @sf.feature.changed.connect
+            def update_threshold(event):
+
+                # update min/max threshold
+
+                sf.threshold.max = np.max(
+                    widget.data_df.value[sf.feature.value.value])
+                sf.threshold.min = np.min(
+                    widget.data_df.value[sf.feature.value.value])
+                sf.threshold.value = np.min(
+                    widget.data_df.value[sf.feature.value.value])
+
+            @sf.delete.changed.connect
+            def delete_subfilter(event):
+                sf.threshold.value = sf.threshold.min
+                widget.remove(sf.name)
+
+
+        else:
+            raise Exception("Filter was not initialized.")
+
+    @widget.save_results.changed.connect
+    def save_results(event):
+
+        if len(widget.filter_df.value > 0):
+            result_df = widget.data_df.value.loc[
+                widget.filter_df.value.all(axis=1)]
+        else:
+            result_df = widget.data_df.value
+
+        result_df.to_csv(widget.result_path.value)
+
+
+class Feature(Enum):
+    """A set of valid arithmetic operations for image_arithmetic.
+    To create nice dropdown menus with magicgui, it's best
+    (but not required) to use Enums.  Here we make an Enum
+    class for all of the image math operations we want to
+    allow.
+    """
+    z_coordinates = "centroid-0"
+    y_coordinates = "centroid-1"
+    x_coordinates = "centroid-2"
+    min_intensity = "min_intensity"
+    max_intensity = "max_intensity"
+    mean_intensity = "mean_intensity"
+    var_intensity = "var_intensity"
+    mean_background_intensity = "mean_background_intensity"
+    SNR = "SNR"
+    size = 'size'
+
+
+@magic_factory(add_filter={"widget_type": "PushButton", 'visible': False},
+               layout='vertical',
+               result_path={'mode': 'w', 'label': 'save results',
+                            'visible': False},
+               save_results={'widget_type': 'PushButton', 'visible': False},
+               initialize_filter={'widget_type': 'PushButton'},
+               widget_init=filter_init)
+def filter_widget(img: Image,
+                  points_layer: Points,
+                  data_df=Image,
+                  filter_df=Image,
+                  add_filter=0,
+                  initialize_filter=0,
+                  result_path=Path(),
+                  save_results=0):
+    pass
+
+
+@magic_factory(auto_call=True,
+               threshold={'label': " ", "widget_type": "FloatSlider"},
+               delete={"widget_type": "PushButton"},
+               layout='horizontal')
+def subfilter(feature: Feature,
+              threshold=0,
+              delete=0):
+    pass
