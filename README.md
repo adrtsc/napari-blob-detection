@@ -22,18 +22,6 @@ A napari plugin for blob detection.
 
 https://user-images.githubusercontent.com/41194383/120099217-b2fb2700-c13a-11eb-9e9a-1c00eaa114c0.mp4
 
-----------------------------------
-
-This [napari] plugin was generated with [Cookiecutter] using [@napari]'s [cookiecutter-napari-plugin] template.
-
-<!--
-Don't miss the full getting started guide to set up your new package:
-https://github.com/napari/cookiecutter-napari-plugin#getting-started
-
-and review the napari docs for plugin developers:
-https://napari.org/plugins/stable/index.html
--->
-
 ## Installation
 
 It's best to create a new python environment to try the plugin:
@@ -60,6 +48,18 @@ Start JupyterLab
 
     jupyter lab 
     
+    
+----------------------------------
+
+This [napari] plugin was generated with [Cookiecutter] using [@napari]'s [cookiecutter-napari-plugin] template.
+
+<!--
+Don't miss the full getting started guide to set up your new package:
+https://github.com/napari/cookiecutter-napari-plugin#getting-started
+
+and review the napari docs for plugin developers:
+https://napari.org/plugins/stable/index.html
+-->
 
 ## Contributing
 
