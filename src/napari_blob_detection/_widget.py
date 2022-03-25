@@ -65,7 +65,8 @@ def blob_detection(
                      'features': blobs,
                      'symbol': marker,
                      'edge_color': 'white',
-                     'face_color': 'transparent'},
+                     'face_color': 'transparent',
+                     'scale': layer.scale},
             'points')
 
 
