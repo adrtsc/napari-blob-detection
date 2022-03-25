@@ -9,6 +9,7 @@ Replace code below according to your needs.
 import numpy as np
 import pandas as pd
 import pickle
+import collections
 from napari_blob_detection.measure_blobs import measure_blobs
 from napari_blob_detection.measure_blobs import measure_coordinates
 from napari_blob_detection.svm import SVM
@@ -21,8 +22,10 @@ from pathlib import Path
 
 
 @magic_factory(layer={'tooltip': '2D or 3D ndarray. Input grayscale image, blobs are assumed to be light on dark background (white on black).'},
-               min_sigma={'tooltip': 'scalar or sequence of scalars, optional. σ \u2248 diameter/(2*√2). The minimum standard deviation for Gaussian kernel. Keep this low to detect smaller blobs. The standard deviations of the Gaussian filter are given for each axis as a sequence, or as a single number, in which case it is equal for all axes.'},
-               max_sigma={'tooltip': 'scalar or sequence of scalars, optional. The maximum standard deviation for Gaussian kernel. Keep this high to detect larger blobs. The standard deviations of the Gaussian filter are given for each axis as a sequence, or as a single number, in which case it is equal for all axes.'},
+               min_sigma={'widget_type': 'LiteralEvalLineEdit',
+                          'tooltip': 'scalar or sequence of scalars, optional. σ \u2248 diameter/(2*√2). The minimum standard deviation for Gaussian kernel. Keep this low to detect smaller blobs. The standard deviations of the Gaussian filter are given for each axis as a sequence, or as a single number, in which case it is equal for all axes.'},
+               max_sigma={'widget_type': 'LiteralEvalLineEdit',
+                          'tooltip': 'scalar or sequence of scalars, optional. The maximum standard deviation for Gaussian kernel. Keep this high to detect larger blobs. The standard deviations of the Gaussian filter are given for each axis as a sequence, or as a single number, in which case it is equal for all axes.'},
                num_sigma={'tooltip': 'int, optional.The number of intermediate values of standard deviations to consider between min_sigma and max_sigma.'},
                overlap={'tooltip': 'float, optional. A value between 0 and 1. If the area of two blobs overlaps by a fraction greater than threshold, the smaller blob is eliminated.'},
                log_scale={'tooltip': 'bool, optional. If set intermediate values of standard deviations are interpolated using a logarithmic scale to the base 10. If not, linear interpolation is used.'},
@@ -45,7 +48,12 @@ def blob_detection(
         marker='disc') -> LayerDataTuple:
     """Detect blobs in image, return points layer with spots"""
 
-    # add empty z-dimension if not present
+    # adjust sigmas in case only one scalar is entered:
+
+    if isinstance(min_sigma, collections.abc.Sequence) == False:
+        min_sigma = np.repeat(min_sigma, 3)
+    if isinstance(max_sigma, collections.abc.Sequence) == False:
+        min_sigma = np.repeat(max_sigma, 3)
 
     blobs = measure_blobs(layer.data,
                           min_sigma=min_sigma,
@@ -61,7 +69,10 @@ def blob_detection(
                     'centroid-1',
                     'centroid-2']]
 
-    return (output, {'size': blobs['size'],
+    sizes = blobs[['size-0', 'size-1', 'size-2']]
+    sizes.insert(0, 'size-time', 1)
+
+    return (output, {'size': sizes,
                      'features': blobs,
                      'symbol': marker,
                      'edge_color': 'white',
@@ -73,16 +84,20 @@ def blob_detection(
 def selector_init(widget):
     @widget.initialize_layers.changed.connect
     def initialize_layers(event):
-        widget.points_layer.value.current_size = widget.clf_layer.value.size.mean()
+        widget.points_layer.value.current_size = widget.clf_layer.value.size[:, 1:].mean()
         widget.points_layer.value.current_face_color = "yellow"
         widget.points_layer.value.current_edge_color = "yellow"
         widget.points_layer.value.mode = 'add'
 
         if hasattr(widget, "data_df") == False:
-            widget.data_df = pd.DataFrame(columns=['centroid-0',
+            widget.data_df = pd.DataFrame(columns=['timepoint',
+                                                   'centroid-0',
                                                    'centroid-1',
                                                    'centroid-2',
-                                                   'size'])
+                                                   'size-time',
+                                                   'size-0',
+                                                   'size-1',
+                                                   'size-2'])
             widget.labels = list()
 
         # to-do: make the points_layer the active layer upon initialization
@@ -132,7 +147,10 @@ def selector_init(widget):
                                             'centroid-0',
                                             'centroid-1',
                                             'centroid-2']],
-                                       size=pos[['size']],
+                                       size=pos[['size-time',
+                                                 'size-0',
+                                                 'size-1',
+                                                 'size-2']],
                                        name='result',
                                        edge_color='yellow',
                                        face_color='transparent',
@@ -234,7 +252,10 @@ def filter_init(widget):
                                       'centroid-0',
                                       'centroid-1',
                                       'centroid-2']]
-                new_size = df_filtered[['size']]
+                new_size = df_filtered[['size-time',
+                                        'size-0',
+                                        'size-1',
+                                        'size-2']]
 
 
                 widget.points_layer.value.data = output
@@ -291,7 +312,9 @@ class Feature(Enum):
     var_intensity = "var_intensity"
     mean_background_intensity = "mean_background_intensity"
     SNR = "SNR"
-    size = 'size'
+    size_z = 'size-0'
+    size_y = 'size-1'
+    size_x = 'size-2'
 
 
 @magic_factory(add_filter={"widget_type": "PushButton", 'visible': False},

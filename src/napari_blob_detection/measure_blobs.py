@@ -29,7 +29,9 @@ def measure_blobs(img,
         current_blobs = pd.DataFrame(current_blobs, columns=['centroid-0',
                                                              'centroid-1',
                                                              'centroid-2',
-                                                             'size'])
+                                                             'size-0',
+                                                             'size-1',
+                                                             'size-2'])
 
         current_blobs['timepoint'] = idx
 
@@ -52,11 +54,12 @@ def measure_blobs(img,
                 :,
                 :]
 
-        rr, cc = disk(tuple(row[['centroid-1', 'centroid-2']]), row['size'],
+        # assuming scale in x,y are the same for the moment
+        rr, cc = disk(tuple(row[['centroid-1', 'centroid-2']]), row['size-1'],
                       shape=np.shape(c_img))
 
         rr_bg, cc_bg = disk(tuple(row[['centroid-1', 'centroid-2']]),
-                            2 * row['size'],
+                            2 * row['size-1'],
                             shape=np.shape(c_img))
 
         pixels = c_img[rr, cc]
@@ -84,19 +87,24 @@ def measure_blobs(img,
 
     # adjust size to represent diameter rather than sigma
 
-    blobs['size'] = blobs['size']*np.sqrt(2)*2
+    blobs['size-0'] = blobs['size-0']*np.sqrt(2)*2
+    blobs['size-1'] = blobs['size-1'] * np.sqrt(2) * 2
+    blobs['size-2'] = blobs['size-2'] * np.sqrt(2) * 2
 
     return blobs
 
 
 def measure_coordinates(coordinates, sizes, img):
 
-    data = np.column_stack((coordinates, sizes[:, 0]))
+    data = np.column_stack((coordinates, sizes))
     blobs = pd.DataFrame(data, columns=['timepoint',
                                         'centroid-0',
                                         'centroid-1',
                                         'centroid-2',
-                                        'size'])
+                                        'size-time',
+                                        'size-0',
+                                        'size-1',
+                                        'size-2'])
 
     # additional measurements
 
@@ -112,12 +120,12 @@ def measure_coordinates(coordinates, sizes, img):
                 row['centroid-0'].astype('int'),
                 :,
                 :]
-
-        rr, cc = disk(tuple(row[['centroid-1', 'centroid-2']]), row['size'],
+        # assuming scale in x,y are the same for the moment
+        rr, cc = disk(tuple(row[['centroid-1', 'centroid-2']]), row['size-1'],
                       shape=np.shape(c_img))
 
         rr_bg, cc_bg = disk(tuple(row[['centroid-1', 'centroid-2']]),
-                            2 * row['size'],
+                            2 * row['size-1'],
                             shape=np.shape(c_img))
 
         pixels = c_img[rr, cc]
