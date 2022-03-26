@@ -233,14 +233,19 @@ def filter_init(widget):
             # update min/max threshold
 
             sf.threshold.max = np.max(
-                widget.data_df.value[sf.feature.value.value])
+                widget.data_df.value[sf.feature.value.value])*1.05
             sf.threshold.min = np.min(
-                widget.data_df.value[sf.feature.value.value])
+                widget.data_df.value[sf.feature.value.value])*0.95
 
             @sf.threshold.changed.connect
             def apply_filter(event):
-                widget.filter_df.value[sf.name] = (widget.data_df.value[
-                                                       sf.feature.value.value] >= sf.threshold.value)
+
+                if sf.min_max.value == 1:
+                    widget.filter_df.value[sf.name] = (widget.data_df.value[
+                                                           sf.feature.value.value] >= sf.threshold.value)
+                if sf.min_max.value == 2:
+                    widget.filter_df.value[sf.name] = (widget.data_df.value[
+                                                           sf.feature.value.value] <= sf.threshold.value)
 
                 widget.filter_df.value.all(axis=1)
 
@@ -263,21 +268,38 @@ def filter_init(widget):
                 widget.points_layer.value.selected_data.clear()
                 widget.points_layer.value.refresh()
 
+            @sf.min_max.changed.connect
+            def update_min_max(event):
+                if sf.min_max.value == 1:
+                    sf.threshold.value = sf.threshold.min
+                if sf.min_max.value == 2:
+                    sf.threshold.value = sf.threshold.max
+
             @sf.feature.changed.connect
             def update_threshold(event):
 
                 # update min/max threshold
 
                 sf.threshold.max = np.max(
-                    widget.data_df.value[sf.feature.value.value])
+                    widget.data_df.value[sf.feature.value.value])*1.05
                 sf.threshold.min = np.min(
-                    widget.data_df.value[sf.feature.value.value])
-                sf.threshold.value = np.min(
-                    widget.data_df.value[sf.feature.value.value])
+                    widget.data_df.value[sf.feature.value.value])*0.95
+
+                if sf.min_max.value == 1:
+                    sf.threshold.value = np.min(
+                        widget.data_df.value[sf.feature.value.value])
+                if sf.min_max.value == 2:
+                    sf.threshold.value = np.max(
+                        widget.data_df.value[sf.feature.value.value])
 
             @sf.delete.changed.connect
             def delete_subfilter(event):
-                sf.threshold.value = sf.threshold.min
+
+                if sf.min_max.value == 1:
+                    sf.threshold.value = sf.threshold.min
+                if sf.min_max.value == 2:
+                    sf.threshold.value = sf.threshold.max
+
                 widget.remove(sf.name)
 
 
@@ -336,10 +358,15 @@ def filter_widget(img: Image,
 
 
 @magic_factory(auto_call=True,
+               min_max={'label': " ", "widget_type": "RadioButton",
+                        "choices": [("min", 1), ("max", 2)],
+                        'tooltip': "min: filter out values lower than threshold."
+                                   " max: filter out values higher than threshold"},
                threshold={'label': " ", "widget_type": "FloatSlider"},
                delete={"widget_type": "PushButton"},
                layout='horizontal')
 def subfilter(feature: Feature,
+              min_max=1,
               threshold=0,
               delete=0):
     pass
