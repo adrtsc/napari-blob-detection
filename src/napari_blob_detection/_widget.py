@@ -98,7 +98,6 @@ def selector_init(widget):
                                                    'size-0',
                                                    'size-1',
                                                    'size-2'])
-            widget.labels = list()
 
         # to-do: make the points_layer the active layer upon initialization
 
@@ -128,8 +127,8 @@ def selector_init(widget):
         np.unique(np.mean(widget.points_layer.value.face_color, axis=1),
                   return_inverse=True)[1]
 
-        widget.data_df = widget.data_df.append(data_df)
-        widget.labels.extend(labels)
+        widget.data_df = data_df
+        widget.lbls = labels
 
         print("training data was added")
 
@@ -178,15 +177,20 @@ def selection_widget(points_layer: Points,
                      save_classifier=0,
                      apply_classifier=0,
                      add_training_data=0):
-    weights = np.unique(selection_widget.labels, return_counts=True)[0]
+    weights = np.unique(selection_widget.lbls, return_counts=True)[0]
     selection_widget.training_data = selection_widget.data_df.drop(
         ['timepoint',
          'centroid-0',
          'centroid-1',
-         'centroid-2'], axis=1)
+         'centroid-2',
+         'size-time'], axis=1)
+
+    # drop columns that are constant across training data:
+    selection_widget.training_data = selection_widget.training_data.loc[
+                                     :, (selection_widget.training_data != selection_widget.training_data.iloc[0]).any()]
 
     selection_widget.clf = SVM(training_data=selection_widget.training_data,
-                               labels=selection_widget.labels,
+                               labels=selection_widget.lbls,
                                split_ratio=0.2,
                                weights={0: 1, 1: weights[0] / weights[1]},
                                columns=selection_widget.training_data.columns)
