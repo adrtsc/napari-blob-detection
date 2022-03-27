@@ -20,6 +20,12 @@ from magicgui import magic_factory
 from napari import Viewer
 from pathlib import Path
 
+def diam_to_napari(diameters):
+    return diameters-1
+
+def diam_from_napari(diameters):
+    return diameters+1
+
 
 @magic_factory(layer={'tooltip': '2D or 3D ndarray. Input grayscale image, blobs are assumed to be light on dark background (white on black).'},
                min_sigma={'widget_type': 'LiteralEvalLineEdit',
@@ -62,21 +68,25 @@ def blob_detection(
                           threshold=threshold,
                           overlap=overlap,
                           log_scale=log_scale,
-                          exclude_border=exclude_border
+                          exclude_border=exclude_border,
+                          measure_features=False
                           )
     output = blobs[['timepoint',
                     'centroid-0',
                     'centroid-1',
                     'centroid-2']]
 
-    sizes = blobs[['size-0', 'size-1', 'size-2']]
-    sizes.insert(0, 'size-time', 1)
+    sizes = diam_to_napari(blobs[['size-time',
+                                  'size-0',
+                                  'size-1',
+                                  'size-2']])
 
     return (output, {'size': sizes,
                      'features': blobs,
                      'symbol': marker,
                      'edge_color': 'white',
                      'face_color': 'transparent',
+                     'opacity': 0.5,
                      'scale': layer.scale},
             'points')
 
@@ -84,10 +94,11 @@ def blob_detection(
 def selector_init(widget):
     @widget.initialize_layers.changed.connect
     def initialize_layers(event):
-        widget.points_layer.value.current_size = widget.clf_layer.value.size[:, 1:].mean()
-        widget.points_layer.value.current_face_color = "yellow"
-        widget.points_layer.value.current_edge_color = "yellow"
-        widget.points_layer.value.mode = 'add'
+        widget.annotation_layer.value.current_size = widget.points_layer.value.size[:, 1:].mean()
+        widget.annotation_layer.value.current_face_color = "yellow"
+        widget.annotation_layer.value.current_edge_color = "yellow"
+        widget.annotation_layer.value.opacity = 0.5
+        widget.annotation_layer.value.mode = 'add'
 
         if hasattr(widget, "data_df") == False:
             widget.data_df = pd.DataFrame(columns=['timepoint',
@@ -99,16 +110,16 @@ def selector_init(widget):
                                                    'size-1',
                                                    'size-2'])
 
-        # to-do: make the points_layer the active layer upon initialization
+        # to-do: make the annotation_layer the active layer upon initialization
 
         @widget.blob_class.changed.connect
         def update_blob_color(event):
             if widget.blob_class.value == 1:
-                widget.points_layer.value.current_face_color = "yellow"
-                widget.points_layer.value.current_edge_color = "yellow"
+                widget.annotation_layer.value.current_face_color = "yellow"
+                widget.annotation_layer.value.current_edge_color = "yellow"
             elif widget.blob_class.value == 2:
-                widget.points_layer.value.current_face_color = "gray"
-                widget.points_layer.value.current_edge_color = "gray"
+                widget.annotation_layer.value.current_face_color = "gray"
+                widget.annotation_layer.value.current_edge_color = "gray"
 
     @widget.save_classifier.changed.connect
     def save_classifier(event):
@@ -120,11 +131,13 @@ def selector_init(widget):
 
     @widget.add_training_data.changed.connect
     def add_training_data(event):
-        data_df = measure_coordinates(widget.points_layer.value.data,
-                                      widget.points_layer.value.size,
+        coordinates = widget.annotation_layer.value.data
+        sizes = diam_from_napari(widget.annotation_layer.value.size)
+        data_df = measure_coordinates(coordinates,
+                                      sizes,
                                       widget.img_layer.value.data)
         labels = \
-        np.unique(np.mean(widget.points_layer.value.face_color, axis=1),
+        np.unique(np.mean(widget.annotation_layer.value.face_color, axis=1),
                   return_inverse=True)[1]
 
         widget.data_df = data_df
@@ -134,26 +147,33 @@ def selector_init(widget):
 
     @widget.apply_classifier.changed.connect
     def apply_classifier(event):
-        blobs = measure_coordinates(widget.clf_layer.value.data,
-                                    widget.clf_layer.value.size,
+        coordinates = widget.points_layer.value.data
+        sizes = diam_from_napari(widget.points_layer.value.size)
+        blobs = measure_coordinates(coordinates,
+                                    sizes,
                                     widget.clf_img_layer.value.data)
 
         widget.result = widget.clf.classify(blobs)
 
         pos = widget.result.loc[widget.result['classification'] == 1]
 
-        widget.viewer.value.add_points(pos[['timepoint',
-                                            'centroid-0',
-                                            'centroid-1',
-                                            'centroid-2']],
-                                       size=pos[['size-time',
-                                                 'size-0',
-                                                 'size-1',
-                                                 'size-2']],
+        coordinates = pos[['timepoint',
+                           'centroid-0',
+                           'centroid-1',
+                           'centroid-2']]
+
+        sizes = diam_to_napari(pos[['size-time',
+                                    'size-0',
+                                    'size-1',
+                                    'size-2']])
+
+        widget.viewer.value.add_points(coordinates,
+                                       size=sizes,
                                        name='result',
                                        edge_color='yellow',
                                        face_color='transparent',
-                                       scale=widget.clf_layer.value.scale)
+                                       opacity=0.5,
+                                       scale=widget.points_layer.value.scale)
 
 
 @magic_factory(blob_class={'widget_type': 'RadioButtons',
@@ -166,9 +186,9 @@ def selector_init(widget):
                apply_classifier={'widget_type': 'PushButton'},
                add_training_data={'widget_type': 'PushButton'},
                widget_init=selector_init)
-def selection_widget(points_layer: Points,
+def selection_widget(annotation_layer: Points,
                      img_layer: Image,
-                     clf_layer: Points,
+                     points_layer: Points,
                      clf_img_layer: Image,
                      viewer: Viewer,
                      initialize_layers=0,
@@ -207,9 +227,11 @@ def filter_init(widget):
     def measure(event):
 
         coordinates = widget.points_layer.value.data
-        sizes = widget.points_layer.value.size
+        sizes = diam_from_napari(widget.points_layer.value.size)
 
         data_df = measure_coordinates(coordinates, sizes, widget.img.value.data)
+        data_df[['size-time', 'size-0', 'size-1', 'size-2']] = diam_to_napari(
+            data_df[['size-time', 'size-0', 'size-1', 'size-2']])
         widget.data_df.value = data_df
         widget.filter_df.value = pd.DataFrame()
 
