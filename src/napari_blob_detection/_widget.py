@@ -59,7 +59,7 @@ def blob_detection(
     if isinstance(min_sigma, collections.abc.Sequence) == False:
         min_sigma = np.repeat(min_sigma, 3)
     if isinstance(max_sigma, collections.abc.Sequence) == False:
-        min_sigma = np.repeat(max_sigma, 3)
+        max_sigma = np.repeat(max_sigma, 3)
 
     blobs = measure_blobs(layer.data,
                           min_sigma=min_sigma,
