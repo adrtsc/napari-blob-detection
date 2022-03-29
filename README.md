@@ -52,6 +52,10 @@ Start JupyterLab
 
     jupyter lab 
     
+## Using the plugin with your own data
+
+If you want to use the plugin with your own data, it is important that you convert your image into a 4D (t, z, y, x) array before adding it as image layer to napari. Otherwise the plugin will struggle.
+    
     
 ----------------------------------
 
