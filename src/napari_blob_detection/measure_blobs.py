@@ -1,31 +1,14 @@
 import numpy as np
 import pandas as pd
 from skimage.draw import disk
-from skimage.feature import blob_log
 
 
-def measure_blobs(img,
-                  min_sigma=3,
-                  max_sigma=3,
-                  num_sigma=1,
-                  threshold=0.003000,
-                  overlap=0.50,
-                  log_scale=False,
-                  exclude_border=False,
-                  measure_features=False
-                  ):
+def measure_blobs(img, func, measure_features=False, **kwargs):
 
     blobs = []
 
     for idx, i in enumerate(list(img)):
-        current_blobs = blob_log(i,
-                                 min_sigma=min_sigma,
-                                 max_sigma=max_sigma,
-                                 num_sigma=num_sigma,
-                                 threshold=threshold,
-                                 overlap=overlap,
-                                 log_scale=log_scale,
-                                 exclude_border=exclude_border)
+        current_blobs = func(i, **kwargs)
 
         current_blobs = pd.DataFrame(current_blobs, columns=['centroid-0',
                                                              'centroid-1',

@@ -13,6 +13,7 @@ import collections
 from napari_blob_detection.measure_blobs import measure_blobs
 from napari_blob_detection.measure_blobs import measure_coordinates
 from napari_blob_detection.svm import SVM
+from skimage.feature import blob_log, blob_dog
 from napari.types import LayerDataTuple
 from enum import Enum
 from napari.layers import Image, Points
@@ -20,32 +21,74 @@ from magicgui import magic_factory
 from napari import Viewer
 from pathlib import Path
 
+
 def diam_to_napari(diameters):
-    return diameters-1
+    return diameters - 1
+
 
 def diam_from_napari(diameters):
-    return diameters+1
+    return diameters + 1
 
 
-@magic_factory(layer={'tooltip': '2D or 3D ndarray. Input grayscale image, blobs are assumed to be light on dark background (white on black).'},
+class Detector(Enum):
+    """A set of valid arithmetic operations for image_arithmetic.
+    To create nice dropdown menus with magicgui, it's best
+    (but not required) to use Enums.  Here we make an Enum
+    class for all of the image math operations we want to
+    allow.
+    """
+    # dropdown options for detectors
+    LoG = "blob_log"
+    DoG = "blob_dog"
+
+    # not using difference of hessian here, because it only works on 2D images
+
+
+def blob_detection_init(widget):
+    # this option should only be visible for blob_dog
+    widget.sigma_ratio.visible = False
+
+    # update available options for each detector
+    @widget.detector.changed.connect
+    def update_options(event):
+        if widget.detector.value.value == "blob_log":
+            widget.num_sigma.visible = True
+            widget.log_scale.visible = True
+            widget.sigma_ratio.visible = False
+
+        elif widget.detector.value.value == "blob_dog":
+            widget.num_sigma.visible = False
+            widget.log_scale.visible = False
+            widget.sigma_ratio.visible = True
+
+
+@magic_factory(layer={
+    'tooltip': '2D or 3D ndarray. Input grayscale image, blobs are assumed to be light on dark background (white on black).'},
                min_sigma={'widget_type': 'LiteralEvalLineEdit',
                           'tooltip': 'scalar or sequence of scalars, optional. σ \u2248 diameter/(2*√2). The minimum standard deviation for Gaussian kernel. Keep this low to detect smaller blobs. The standard deviations of the Gaussian filter are given for each axis as a sequence, or as a single number, in which case it is equal for all axes.'},
                max_sigma={'widget_type': 'LiteralEvalLineEdit',
                           'tooltip': 'scalar or sequence of scalars, optional. The maximum standard deviation for Gaussian kernel. Keep this high to detect larger blobs. The standard deviations of the Gaussian filter are given for each axis as a sequence, or as a single number, in which case it is equal for all axes.'},
-               num_sigma={'tooltip': 'int, optional.The number of intermediate values of standard deviations to consider between min_sigma and max_sigma.'},
-               overlap={'tooltip': 'float, optional. A value between 0 and 1. If the area of two blobs overlaps by a fraction greater than threshold, the smaller blob is eliminated.'},
-               log_scale={'tooltip': 'bool, optional. If set intermediate values of standard deviations are interpolated using a logarithmic scale to the base 10. If not, linear interpolation is used.'},
-               exclude_border={'tooltip': 'tuple of ints, int, or False, optional. If tuple of ints, the length of the tuple must match the input array’s dimensionality. Each element of the tuple will exclude peaks from within exclude_border-pixels of the border of the image along that dimension. If nonzero int, exclude_border excludes peaks from within exclude_border-pixels of the border of the image. If zero or False, peaks are identified regardless of their distance from the border.'},
+               num_sigma={
+                   'tooltip': 'int, optional.The number of intermediate values of standard deviations to consider between min_sigma and max_sigma.'},
+               overlap={
+                   'tooltip': 'float, optional. A value between 0 and 1. If the area of two blobs overlaps by a fraction greater than threshold, the smaller blob is eliminated.'},
+               log_scale={
+                   'tooltip': 'bool, optional. If set intermediate values of standard deviations are interpolated using a logarithmic scale to the base 10. If not, linear interpolation is used.'},
+               exclude_border={
+                   'tooltip': 'tuple of ints, int, or False, optional. If tuple of ints, the length of the tuple must match the input array’s dimensionality. Each element of the tuple will exclude peaks from within exclude_border-pixels of the border of the image along that dimension. If nonzero int, exclude_border excludes peaks from within exclude_border-pixels of the border of the image. If zero or False, peaks are identified regardless of their distance from the border.'},
                call_button="Detect blobs",
                marker={"choices": ['disc', 'ring', 'diamond'],
                        'tooltip': 'marker to represent the detected blobs'},
                threshold={"step": 10e-15,
-                          "tooltip": 'float, optional. The absolute lower bound for scale space maxima. Local maxima smaller than thresh are ignored. Reduce this to detect blobs with less intensities.'})
+                          "tooltip": 'float, optional. The absolute lower bound for scale space maxima. Local maxima smaller than thresh are ignored. Reduce this to detect blobs with less intensities.'},
+               widget_init=blob_detection_init)
 def blob_detection(
         layer: Image,
         viewer: Viewer,
+        detector: Detector,
         min_sigma=3,
         max_sigma=3,
+        sigma_ratio=1.6,
         num_sigma=1,
         threshold=0.003000,
         overlap=0.50,
@@ -61,16 +104,25 @@ def blob_detection(
     if isinstance(max_sigma, collections.abc.Sequence) == False:
         max_sigma = np.repeat(max_sigma, 3)
 
+    # get arguments of function
+    kwargs = locals()
+    kwargs = {el: val for (el, val) in kwargs.items() if
+              el not in ['layer', 'viewer', 'marker', 'detector']}
+
+    # replace this with lookup dictionary
+    if detector.value == "blob_log":
+        func = blob_log
+        kwargs.pop('sigma_ratio')
+    elif detector.value == "blob_dog":
+        func = blob_dog
+        kwargs.pop('num_sigma')
+        kwargs.pop('log_scale')
+
     blobs = measure_blobs(layer.data,
-                          min_sigma=min_sigma,
-                          max_sigma=max_sigma,
-                          num_sigma=num_sigma,
-                          threshold=threshold,
-                          overlap=overlap,
-                          log_scale=log_scale,
-                          exclude_border=exclude_border,
-                          measure_features=False
-                          )
+                          func,
+                          measure_features=False,
+                          **kwargs)
+
     output = blobs[['timepoint',
                     'centroid-0',
                     'centroid-1',
@@ -94,7 +146,8 @@ def blob_detection(
 def selector_init(widget):
     @widget.initialize_layers.changed.connect
     def initialize_layers(event):
-        widget.annotation_layer.value.current_size = widget.points_layer.value.size[:, 1:].mean()
+        widget.annotation_layer.value.current_size = widget.points_layer.value.size[
+                                                     :, 1:].mean()
         widget.annotation_layer.value.current_face_color = "yellow"
         widget.annotation_layer.value.current_edge_color = "yellow"
         widget.annotation_layer.value.opacity = 0.5
@@ -137,8 +190,9 @@ def selector_init(widget):
                                       sizes,
                                       widget.img_layer.value.data)
         labels = \
-        np.unique(np.mean(widget.annotation_layer.value.face_color, axis=1),
-                  return_inverse=True)[1]
+            np.unique(
+                np.mean(widget.annotation_layer.value.face_color, axis=1),
+                return_inverse=True)[1]
 
         widget.data_df = data_df
         widget.lbls = labels
@@ -207,7 +261,9 @@ def selection_widget(annotation_layer: Points,
 
     # drop columns that are constant across training data:
     selection_widget.training_data = selection_widget.training_data.loc[
-                                     :, (selection_widget.training_data != selection_widget.training_data.iloc[0]).any()]
+                                     :, (selection_widget.training_data !=
+                                         selection_widget.training_data.iloc[
+                                             0]).any()]
 
     selection_widget.clf = SVM(training_data=selection_widget.training_data,
                                labels=selection_widget.lbls,
@@ -229,7 +285,8 @@ def filter_init(widget):
         coordinates = widget.points_layer.value.data
         sizes = diam_from_napari(widget.points_layer.value.size)
 
-        data_df = measure_coordinates(coordinates, sizes, widget.img.value.data)
+        data_df = measure_coordinates(coordinates, sizes,
+                                      widget.img.value.data)
         data_df[['size-time', 'size-0', 'size-1', 'size-2']] = diam_to_napari(
             data_df[['size-time', 'size-0', 'size-1', 'size-2']])
         widget.data_df.value = data_df
@@ -259,9 +316,9 @@ def filter_init(widget):
             # update min/max threshold
 
             sf.threshold.max = np.max(
-                widget.data_df.value[sf.feature.value.value])*1.05
+                widget.data_df.value[sf.feature.value.value]) * 1.05
             sf.threshold.min = np.min(
-                widget.data_df.value[sf.feature.value.value])*0.95
+                widget.data_df.value[sf.feature.value.value]) * 0.95
 
             @sf.threshold.changed.connect
             def apply_filter(event):
@@ -278,7 +335,6 @@ def filter_init(widget):
                 data_df = widget.data_df.value
                 df_filtered = data_df.loc[widget.filter_df.value.all(axis=1)]
 
-
                 output = df_filtered[['timepoint',
                                       'centroid-0',
                                       'centroid-1',
@@ -287,7 +343,6 @@ def filter_init(widget):
                                         'size-0',
                                         'size-1',
                                         'size-2']]
-
 
                 widget.points_layer.value.data = output
                 widget.points_layer.value.size = new_size
@@ -307,9 +362,9 @@ def filter_init(widget):
                 # update min/max threshold
 
                 sf.threshold.max = np.max(
-                    widget.data_df.value[sf.feature.value.value])*1.05
+                    widget.data_df.value[sf.feature.value.value]) * 1.05
                 sf.threshold.min = np.min(
-                    widget.data_df.value[sf.feature.value.value])*0.95
+                    widget.data_df.value[sf.feature.value.value]) * 0.95
 
                 if sf.min_max.value == 1:
                     sf.threshold.value = np.min(
