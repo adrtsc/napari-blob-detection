@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 import collections
 from napari_blob_detection.measure_blobs import measure_blobs
 from napari_blob_detection.utils import diam_to_napari
@@ -214,27 +215,23 @@ def difference_of_gaussian(
 @magic_factory(layer={'tooltip': ('2D or 3D ndarray. Input grayscale image, '
                                   'blobs are assumed to be light on dark '
                                   'background (white on black).')},
+               diameter={'widget_type': 'LiteralEvalLineEdit'},
+               threshold={"step": 10e-15},
                call_button="Detect blobs",
                marker={"choices": ['disc', 'ring', 'diamond'],
-                       'tooltip': 'marker to represent the detected blobs'},
-               threshold={"step": 10e-15,
-                          "tooltip": ('float, optional. The absolute lower '
-                                      'bound for scale space maxima. '
-                                      'Local maxima smaller than thresh are '
-                                      'ignored. Reduce this to detect blobs '
-                                      'with less intensities.')})
+                       'tooltip': 'marker to represent the detected blobs'})
 def tp_locate(
         layer: Image,
         diameter=3,
-        minmass=None,
-        maxsize=None,
+        minmass=0,
+        maxsize=100,
         separation=None,
         noise_size=1,
         smoothing_size=None,
-        threshold=None,
+        threshold=0.00300,
         invert=False,
         percentile=64,
-        topn=None,
+        topn=1000,
         preprocess=True,
         max_iterations=10,
         filter_before=None,
@@ -251,7 +248,7 @@ def tp_locate(
 
     blobs = []
 
-    for idx, i in enumerate(list(img)):
+    for idx, i in enumerate(list(layer.data)):
         current_blobs = locate(i, **kwargs)
         current_blobs['timepoint'] = idx
         current_blobs['size-time'] = 1
@@ -260,28 +257,19 @@ def tp_locate(
 
     blobs = pd.concat(blobs)
 
-    blobs.rename(columns={'y': 'centroid-1',
-                          'x': 'centroid-2',
-                          'size': 'size-1'}, inplace=True)
-    blobs['size-2'] = blobs['size-1']
-    blobs['size-2'] = blobs['size-2']
-    blobs['size-0'] = 0
+    if 'z' not in blobs.columns:
+        blobs['z'] = 0
 
-    # adjust size to represent diameter rather radius
-
-    blobs['size-0'] = blobs['size-0'] * 2
-    blobs['size-1'] = blobs['size-1'] * 2
-    blobs['size-2'] = blobs['size-2'] * 2
+    blobs.rename(columns={'z': 'centroid-0',
+                          'y': 'centroid-1',
+                          'x': 'centroid-2'}, inplace=True)
 
     output = blobs[['timepoint',
                     'centroid-0',
                     'centroid-1',
                     'centroid-2']]
 
-    sizes = diam_to_napari(blobs[['size-time',
-                                  'size-0',
-                                  'size-1',
-                                  'size-2']])
+    sizes = diam_to_napari(diameter)
 
     return (output, {'size': sizes,
                      'features': blobs,

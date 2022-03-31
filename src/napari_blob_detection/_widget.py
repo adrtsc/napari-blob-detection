@@ -13,7 +13,8 @@ from napari_blob_detection.measure_blobs import measure_coordinates
 from napari_blob_detection.svm import SVM
 from napari_blob_detection.utils import diam_from_napari, diam_to_napari
 from napari_blob_detection.detectors import (laplacian_of_gaussian,
-                                             difference_of_gaussian)
+                                             difference_of_gaussian,
+                                             tp_locate)
 from enum import Enum
 from napari.layers import Image, Points
 from magicgui import magic_factory
@@ -21,7 +22,8 @@ from napari import Viewer
 from pathlib import Path
 
 DETECTOR_MAPPING = {"blob_log": laplacian_of_gaussian,
-                    "blob_dog": difference_of_gaussian}
+                    "blob_dog": difference_of_gaussian,
+                    "trackpy_locate": tp_locate}
 
 class Detector(Enum):
     """A set of valid arithmetic operations for image_arithmetic.
@@ -33,6 +35,7 @@ class Detector(Enum):
     # dropdown options for detectors
     LoG = "blob_log"
     DoG = "blob_dog"
+    trackpy_locate = "trackpy_locate"
 
     # not using difference of hessian here, because it only works on 2D images
 
