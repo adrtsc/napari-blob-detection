@@ -17,7 +17,7 @@ A napari plugin for blob detection.
 
 <li>selection_widget: Widget to manually annotate a subset of detected blobs as foreground vs. background blobs. The widget can then use the annotated blobs to train a support vector machine to classify the remaining blobs in the image.</li>
 
-<li>loading_widget: Widget to load previously saved blobs.</li>
+<li>tracking_widget: EXPERIMENTAL: tracking of the detected blobs in 2DT and 3DT images .</li>
 </ul> 
 
 https://user-images.githubusercontent.com/41194383/120099217-b2fb2700-c13a-11eb-9e9a-1c00eaa114c0.mp4
