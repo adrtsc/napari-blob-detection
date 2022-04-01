@@ -20,7 +20,7 @@ A napari plugin for blob detection.
 <li>tracking_widget: EXPERIMENTAL: tracking of the detected blobs in 2DT and 3DT images .</li>
 </ul> 
 
-https://user-images.githubusercontent.com/41194383/120099217-b2fb2700-c13a-11eb-9e9a-1c00eaa114c0.mp4
+https://user-images.githubusercontent.com/41194383/161262054-9d0c3bc4-fe6c-4e2d-bcc3-6325583f5624.mp4
 
 ## Installation
 
