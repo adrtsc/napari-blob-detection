@@ -11,6 +11,9 @@ contributions:
     - id: napari-blob-detection.filter_widget
       python_name: napari_blob_detection._widget:filter_widget
       title: Make example magic widget
+    - id: napari-blob-detection.tracking_widget
+      python_name: napari_blob_detection._widget:tracking_widget
+      title: Make example magic widget
   widgets:
     - command: napari-blob-detection.blob_detection
       display_name: blob_detection
@@ -18,3 +21,5 @@ contributions:
       display_name: selection_widget
     - command: napari-blob-detection.filter_widget
       display_name: filter_widget
+    - command: napari-blob-detection.tracking_widget
+      display_name: tracking_widget

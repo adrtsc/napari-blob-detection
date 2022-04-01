@@ -8,7 +8,9 @@ Replace code below according to your needs.
 """
 import numpy as np
 import pandas as pd
+import trackpy as tp
 import pickle
+from napari.types import LayerDataTuple
 from napari_blob_detection.measure_blobs import measure_coordinates
 from napari_blob_detection.svm import SVM
 from napari_blob_detection.utils import diam_from_napari, diam_to_napari
@@ -375,3 +377,17 @@ def subfilter(feature: Feature,
               threshold=0,
               delete=0):
     pass
+
+
+@magic_factory(call_button="track blobs",)
+def tracking_widget(points_layer: Points,
+                    search_range=5) -> LayerDataTuple:
+
+    df = pd.DataFrame(points_layer.data,
+                      columns=['frame', 'z', 'y', 'x'])
+
+    tracks = tp.link(df, search_range=search_range)
+    tracks = tracks[['particle', 'frame', 'z', 'y', 'x']]
+
+    return (tracks, {'scale': points_layer.scale},
+            'tracks')
