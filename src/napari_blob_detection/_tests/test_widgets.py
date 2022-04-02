@@ -81,3 +81,6 @@ def test_filter_widget(make_napari_viewer):
     len_data_filtered = len(viewer.layers['coords'].data)
 
     assert len_data_filtered < len_data, 'blob filtering fails'
+
+    # remove filter
+    widget.subfilter_00.delete.clicked.__call__('delete')
