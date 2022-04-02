@@ -22,6 +22,11 @@ A napari plugin for blob detection.
 
 https://user-images.githubusercontent.com/41194383/161262054-9d0c3bc4-fe6c-4e2d-bcc3-6325583f5624.mp4
 
+An experimental tracking widget that will track your blobs in 2DT and 3DT images is also available:
+
+https://user-images.githubusercontent.com/41194383/161387124-2c4b85ef-6de7-4bfd-810b-fda0d7605a6c.mp4
+
+
 ## Installation
 
 It's best to create a new python environment to try the plugin:
