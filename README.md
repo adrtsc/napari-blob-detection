@@ -77,10 +77,10 @@ How you can load your image initially will depend on the file format that you us
 import numpy as np
 
 # here is a 4D array that has the wrong order of dimensions (y, x, t, z)
-img = np.empty([100, 100, 0, 10]) # img.shape is (100, 100, 0, 10)
+img = np.empty([100, 100, 1, 10]) # img.shape is (100, 100, 1, 10)
 
 # the following line will reorder the dimensions to (t, z, y, x)
-rearranged_img = np.transpose(img, (2, 3, 0, 1)) # rearranged_img.shape is (0, 10, 100, 100)
+rearranged_img = np.transpose(img, (2, 3, 0, 1)) # rearranged_img.shape is (1, 10, 100, 100)
 
 ```
 ----------------------------------
