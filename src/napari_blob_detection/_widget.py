@@ -205,7 +205,7 @@ def filter_init(widget):
     widget.call_button.visible = False
 
     @widget.initialize_filter.changed.connect
-    def measure(event):
+    def measure():
 
         coordinates = widget.points_layer.value.data
         sizes = diam_from_napari(widget.points_layer.value.size)
