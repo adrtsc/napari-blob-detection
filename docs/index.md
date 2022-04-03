@@ -117,7 +117,8 @@ Clicking on "add filter" will add a subwidget to filter the blobs by one feature
 
 It may be that the slider of is squished on your screen. In that case, drag the widget window to the left to make it larger:
 
-https://user-images.githubusercontent.com/41194383/161418489-10110d56-289d-4ed8-86a8-bebdbbe30064.mp4
+<video src="https://user-images.githubusercontent.com/41194383/161418489-10110d56-289d-4ed8-86a8-bebdbbe30064.mp4" controls="controls" style="max-width: 730px;">
+</video>
 
 Dragging the slider will now filter out blob that are either below the threshold (min) or above the threshold (max). To remove the filter again, you can click "delete". You can add multiple filters that will all be applied to the blobs if you want to filter by multiple features:
 
