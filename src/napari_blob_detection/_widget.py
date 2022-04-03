@@ -52,7 +52,7 @@ def blob_detection_init(widget):
     widget.detector_widget.parent_changed()
 
     @widget.detector.changed.connect
-    def update(event):
+    def update():
         if hasattr(widget, 'detector_widget'):
             widget.remove('detector_widget')
         detector_widget = DETECTOR_MAPPING[widget.detector.value.value]
@@ -70,7 +70,7 @@ def blob_detection(detector: Detector):
 
 def selector_init(widget):
     @widget.initialize_layers.changed.connect
-    def initialize_layers(event):
+    def initialize_layers():
         widget.annotation_layer.value.current_size = widget.points_layer.value.size[
                                                      :, 1:].mean()
         widget.annotation_layer.value.current_face_color = "yellow"
@@ -91,7 +91,7 @@ def selector_init(widget):
         # to-do: make the annotation_layer the active layer upon initialization
 
         @widget.blob_class.changed.connect
-        def update_blob_color(event):
+        def update_blob_color():
             if widget.blob_class.value == 1:
                 widget.annotation_layer.value.current_face_color = "yellow"
                 widget.annotation_layer.value.current_edge_color = "yellow"
@@ -100,7 +100,7 @@ def selector_init(widget):
                 widget.annotation_layer.value.current_edge_color = "gray"
 
     @widget.save_classifier.changed.connect
-    def save_classifier(event):
+    def save_classifier():
 
         with open(widget.clf_path.value, "wb") as fp:  # Pickling
             pickle.dump(widget.clf, fp)
@@ -108,7 +108,7 @@ def selector_init(widget):
         print('classifer has been saved')
 
     @widget.add_training_data.changed.connect
-    def add_training_data(event):
+    def add_training_data():
         coordinates = widget.annotation_layer.value.data
         sizes = diam_from_napari(widget.annotation_layer.value.size)
         data_df = measure_coordinates(coordinates,
@@ -125,7 +125,7 @@ def selector_init(widget):
         print("training data was added")
 
     @widget.apply_classifier.changed.connect
-    def apply_classifier(event):
+    def apply_classifier():
         coordinates = widget.points_layer.value.data
         sizes = diam_from_napari(widget.points_layer.value.size)
         blobs = measure_coordinates(coordinates,
@@ -226,7 +226,7 @@ def filter_init(widget):
     widget.subfilter_counter = 0
 
     @widget.add_filter.changed.connect
-    def add_filter(event):
+    def add_filter():
 
         if isinstance(widget.data_df.value, pd.DataFrame):
 
@@ -246,7 +246,7 @@ def filter_init(widget):
                 widget.data_df.value[sf.feature.value.value]) * 0.95
 
             @sf.threshold.changed.connect
-            def apply_filter(event):
+            def apply_filter():
 
                 if sf.min_max.value == 1:
                     widget.filter_df.value[sf.name] = (widget.data_df.value[
@@ -275,14 +275,14 @@ def filter_init(widget):
                 widget.points_layer.value.refresh()
 
             @sf.min_max.changed.connect
-            def update_min_max(event):
+            def update_min_max():
                 if sf.min_max.value == 1:
                     sf.threshold.value = sf.threshold.min
                 if sf.min_max.value == 2:
                     sf.threshold.value = sf.threshold.max
 
             @sf.feature.changed.connect
-            def update_threshold(event):
+            def update_threshold():
 
                 # update min/max threshold
 
@@ -299,7 +299,7 @@ def filter_init(widget):
                         widget.data_df.value[sf.feature.value.value])
 
             @sf.delete.changed.connect
-            def delete_subfilter(event):
+            def delete_subfilter():
 
                 if sf.min_max.value == 1:
                     sf.threshold.value = sf.threshold.min
@@ -313,7 +313,7 @@ def filter_init(widget):
             raise Exception("Filter was not initialized.")
 
     @widget.save_results.changed.connect
-    def save_results(event):
+    def save_results():
 
         if len(widget.filter_df.value > 0):
             result_df = widget.data_df.value.loc[
