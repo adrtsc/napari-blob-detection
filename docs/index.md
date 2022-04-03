@@ -103,7 +103,7 @@ The available parameters will change depending on the detector you choose. Pleas
 
 ### filter widget
 
-After using the blob detection widget you can use the filter widget to filter the blobs by some feature measurements. To open the filter widget go to "Plugins -> napari-blob-detection -> filter_widget. This will dock the filter widget to the napari viewer. The filter widget will initially look like this:
+After using the blob detection widget you can use the filter widget to filter the blobs by some feature measurements. To open the filter widget go to "Plugins -> napari-blob-detection -> filter_widget". This will dock the filter widget to the napari viewer. The filter widget will initially look like this:
 
 ![grafik](https://user-images.githubusercontent.com/41194383/161416992-e11f0cb1-eafc-40fb-b08e-f467733ecafb.png)
 
