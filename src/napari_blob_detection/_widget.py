@@ -381,12 +381,13 @@ def subfilter(feature: Feature,
 
 @magic_factory(call_button="track blobs",)
 def tracking_widget(points_layer: Points,
-                    search_range=5) -> LayerDataTuple:
+                    search_range=5,
+                    memory=0) -> LayerDataTuple:
 
     df = pd.DataFrame(points_layer.data,
                       columns=['frame', 'z', 'y', 'x'])
 
-    tracks = tp.link(df, search_range=search_range)
+    tracks = tp.link(df, search_range=search_range, memory=memory)
     tracks = tracks[['particle', 'frame', 'z', 'y', 'x']]
 
     return (tracks, {'scale': points_layer.scale},
