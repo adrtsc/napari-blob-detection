@@ -7,7 +7,7 @@
 [![codecov](https://codecov.io/gh/adrtsc/napari-blob-detection/branch/main/graph/badge.svg)](https://codecov.io/gh/adrtsc/napari-blob-detection)
 [![napari hub](https://img.shields.io/endpoint?url=https://api.napari-hub.org/shields/napari-blob-detection)](https://napari-hub.org/plugins/napari-blob-detection)
 
-A napari plugin for blob detection.
+A napari plugin for blob detection. For more information on how to use the plugin on your own data please refer to the [docs](https://adrtsc.github.io/napari-blob-detection/).
 
 
 <ul>
@@ -57,37 +57,7 @@ Start JupyterLab
 
     jupyter lab 
     
-## Using the plugin with your own data
-
-If you want to use the plugin with your own data, it is important that you convert your image into a 4D (t, z, y, x) array before adding it as image layer to napari. Otherwise the plugin will struggle. Often you either have to expand the dimensions of your array or rearrange the dimensions:
-
-For example, if your image is a 2D array:
-
-```python
-import numpy as np
-from skimage import io
-import napari
-    
-# read your image    
-img = io.imread('path/to/img')   
-# add t and z dimensions
-img = np.expand_dims(img, (0, 1))
-# create napari viewer and add the image
-viewer = napari.Viewer()
-viewer.add_image(img)
-```
-How you can load your image initially will depend on the file format that you used to save it. In case you have a 4D array but the dimensions are not in the correct order, numpy.transpose() is helpfull to rearrange them.
-
-```python
-import numpy as np
-
-# here is a 4D array that has the wrong order of dimensions (y, x, t, z)
-img = np.empty([100, 100, 1, 10]) # img.shape is (100, 100, 1, 10)
-
-# the following line will reorder the dimensions to (t, z, y, x)
-rearranged_img = np.transpose(img, (2, 3, 0, 1)) # rearranged_img.shape is (1, 10, 100, 100)
-
-```
+  
 ----------------------------------
 
 This [napari] plugin was generated with [Cookiecutter] using [@napari]'s [cookiecutter-napari-plugin] template.
