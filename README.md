@@ -5,7 +5,6 @@
 [![Python Version](https://img.shields.io/pypi/pyversions/napari-blob-detection.svg?color=green)](https://python.org)
 [![tests](https://github.com/adrtsc/napari-blob-detection/workflows/tests/badge.svg)](https://github.com/adrtsc/napari-blob-detection/actions)
 [![codecov](https://codecov.io/gh/adrtsc/napari-blob-detection/branch/main/graph/badge.svg)](https://codecov.io/gh/adrtsc/napari-blob-detection)
-[![napari hub](https://img.shields.io/endpoint?url=https://api.napari-hub.org/shields/napari-blob-detection)](https://napari-hub.org/plugins/napari-blob-detection)
 
 A napari plugin for blob detection. For more information on how to use the plugin on your own data please refer to the [docs](https://adrtsc.github.io/napari-blob-detection/).
 
