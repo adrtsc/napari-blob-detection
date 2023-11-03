@@ -1,7 +1,6 @@
 # napari-blob-detection
 
 [![License](https://img.shields.io/pypi/l/napari-blob-detection.svg?color=green)](https://github.com/adrtsc/napari-blob-detection/raw/main/LICENSE)
-[![PyPI](https://img.shields.io/pypi/v/napari-blob-detection.svg?color=green)](https://pypi.org/project/napari-blob-detection)
 [![Python Version](https://img.shields.io/pypi/pyversions/napari-blob-detection.svg?color=green)](https://python.org)
 [![tests](https://github.com/adrtsc/napari-blob-detection/workflows/tests/badge.svg)](https://github.com/adrtsc/napari-blob-detection/actions)
 [![codecov](https://codecov.io/gh/adrtsc/napari-blob-detection/branch/main/graph/badge.svg)](https://codecov.io/gh/adrtsc/napari-blob-detection)
